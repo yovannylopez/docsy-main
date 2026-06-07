@@ -1,0 +1,13 @@
+{{define "login_result"}}
+<div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+  <p class="text-sm">Inicio de sesión exitoso. Redirigiendo...</p>
+</div>
+<script>
+  (function() {
+    sessionStorage.setItem('access_token', {{printf "%q" .AccessToken}});
+    {{if .RefreshToken}}
+    sessionStorage.setItem('refresh_token', {{printf "%q" .RefreshToken}});
+    {{end}}
+  })();
+</script>
+{{end}}

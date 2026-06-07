@@ -12,6 +12,7 @@ import (
 
 	"github.com/yovannylopez/docsy-main/internal/shared/infrastructure/config"
 	"github.com/yovannylopez/docsy-main/internal/shared/infrastructure/migrations"
+	"github.com/yovannylopez/docsy-main/internal/shared/infrastructure/templates"
 	"github.com/yovannylopez/docsy-main/pkg/logging"
 	"github.com/yovannylopez/docsy-main/pkg/openapi"
 )
@@ -66,6 +67,12 @@ func NewApplication(cfg *config.CoreConfig) (*Application, error) {
 
 // Setup configures the application (routes, OpenAPI).
 func (a *Application) Setup() error {
+	renderer, err := templates.NewRenderer()
+	if err != nil {
+		return fmt.Errorf("error loading HTML templates: %w", err)
+	}
+	a.echo.Renderer = renderer
+
 	router := NewRouter(a.echo, a.container)
 	router.SetupRoutes()
 

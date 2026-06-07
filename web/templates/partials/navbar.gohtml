@@ -1,0 +1,53 @@
+{{define "partials/navbar"}}
+<div class="bg-background relative">
+  <div class="mx-auto px-5">
+    <div class="flex items-center justify-between py-3.5 md:justify-start">
+      <div class="sm:order-1 md:hidden">
+        <button
+          type="button"
+          onclick="toggleMobileMenu()"
+          class="bg-muted text-muted-foreground focus:ring-primary hover:bg-muted-foreground hover:text-muted inline-flex items-center justify-center rounded-md p-2 focus:outline-hidden focus:ring-2 focus:ring-inset"
+          aria-expanded="false">
+          <span class="sr-only">Abrir menú</span>
+          <img src="{{assetURL "/assets/icons/heroicons/outline/menu.svg"}}" alt="" class="h-6 w-6" />
+        </button>
+      </div>
+
+      <div class="flex items-center justify-start gap-3 sm:order-2 ltr:md:mr-10 rtl:md:ml-10 lg:hidden">
+        <img src="{{assetURL "/assets/icons/only-logo.svg"}}" alt="docsy" class="h-8" />
+      </div>
+
+      <div class="hidden space-x-10 sm:order-3 md:flex">
+        <div class="relative flex items-center">
+          <div class="absolute left-3 pointer-events-none">
+            <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <input
+            type="text"
+            name="q"
+            placeholder="Buscar..."
+            class="w-64 pl-10 pr-10 py-2 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-muted-foreground placeholder-muted-foreground/50" />
+        </div>
+      </div>
+
+      <div class="items-center justify-end sm:order-4 md:flex md:flex-1 lg:w-0">
+        <div class="relative ml-3 dropdown">
+          <button
+            type="button"
+            onclick="toggleProfileMenu()"
+            id="profile-menu-button"
+            class="bg-card relative flex rounded-full text-sm"
+            aria-haspopup="true"
+            aria-expanded="false">
+            <span class="sr-only">Abrir menú de usuario</span>
+            <img class="size-9 shrink-0 rounded-md" src="{{if .AvatarURL}}{{.AvatarURL}}{{else}}{{assetURL "/assets/images/avatar-default.svg"}}{{end}}" alt="" />
+          </button>
+          {{template "partials/profile-menu" .}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

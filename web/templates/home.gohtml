@@ -1,0 +1,11 @@
+{{define "home"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+<div class="bg-card rounded-lg border border-border p-8">
+  <p class="text-foreground text-lg">Bienvenido{{if .UserName}}, {{.UserName}}{{end}}.</p>
+  <p class="text-muted-foreground mt-2 text-sm">Panel principal en construcción.</p>
+</div>
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

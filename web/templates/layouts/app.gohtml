@@ -1,0 +1,26 @@
+{{define "app-shell-start"}}
+<div class="flex h-screen w-full overflow-hidden">
+  {{template "partials/sidebar" .}}
+  <div class="flex grow flex-col content-start overflow-hidden bg-card">
+    {{template "partials/navbar" .}}
+    <div
+      id="main-content"
+      class="scrollbar-thumb-rounded scrollbar-track-rounded grow overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted">
+      <div class="mx-auto px-4 py-4 sm:px-8 lg:container">
+{{end}}
+
+{{define "app-shell-end"}}
+      </div>
+    </div>
+    {{template "partials/footer" .}}
+  </div>
+</div>
+{{end}}
+
+{{define "app-layout"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{block "content" .}}{{end}}
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

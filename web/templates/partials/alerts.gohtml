@@ -1,0 +1,7 @@
+{{define "partials/alerts"}}
+{{if .Error}}
+<div class="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+  <p class="text-sm">{{.Error}}</p>
+</div>
+{{end}}
+{{end}}

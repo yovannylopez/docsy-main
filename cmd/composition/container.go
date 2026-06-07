@@ -126,3 +126,11 @@ func (c *Container) CreateHealthHandler() *sharedHandlers.HealthHandler {
 func (c *Container) CreateUserHandler() *usersHandlers.UsersHandler {
 	return c.UserHandler
 }
+
+// CreateLoginPageHandler returns the server-rendered login page handler.
+func (c *Container) CreateLoginPageHandler() *handlers.LoginPageHandler {
+	return handlers.NewLoginPageHandler(
+		c.AuthContainer.LoginUseCase,
+		c.AuthContainer.AuthUseCase,
+	)
+}

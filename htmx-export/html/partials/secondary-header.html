@@ -1,0 +1,24 @@
+{{define "secondary-header"}}
+<!--
+  Placeholders: .HeaderTitle (string), .HeaderDescription (string, opcional), .HeaderIconPath (string SVG d attribute)
+-->
+<div class="hero-header">
+  <div class="hero-header-background"></div>
+  <div class="hero-header-pattern"></div>
+  <div class="hero-header-content">
+    {{if .HeaderIconPath}}
+    <div class="hero-header-icon">
+      <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{.HeaderIconPath}}"></path>
+      </svg>
+    </div>
+    {{end}}
+    <div class="hero-header-text">
+      <h1 class="hero-header-title">{{.HeaderTitle}}</h1>
+      {{if .HeaderDescription}}
+      <p class="hero-header-subtitle">{{.HeaderDescription}}</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

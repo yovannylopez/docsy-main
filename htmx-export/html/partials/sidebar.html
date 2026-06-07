@@ -1,0 +1,150 @@
+{{define "sidebar"}}
+<!-- Placeholders: .SidebarExpanded (bool), .ActiveRoute (string), .AppVersion (string), .UnreadNotifications (int) -->
+<nav
+  id="sidebar"
+  data-expanded="{{.SidebarExpanded}}"
+  class="bg-background hidden h-full flex-col justify-between pt-3 transition-all duration-300 lg:flex w-[210px] xl:w-[280px] sidebar-expanded">
+  <div class="overflow-hidden">
+    <div class="sidebar-logo-row mx-4 mb-2 flex h-9 items-center justify-between">
+      <div class="sidebar-logo flex items-center">
+        <img src="/static/assets/icons/only-logo.svg" alt="docsy" class="h-10 w-30" />
+      </div>
+      <button
+        type="button"
+        onclick="toggleSidebar()"
+        class="sidebar-toggle text-muted-foreground/50 hover:text-muted-foreground flex items-center justify-center rounded-md p-2 transition-all duration-200 focus:outline-hidden"
+        aria-label="Colapsar menú">
+        <img src="/static/assets/icons/heroicons/solid/chevron-double-left.svg" alt="" class="h-5 w-5" />
+      </button>
+    </div>
+
+    <div class="scrollbar-thumb--sm scrollbar-track-rounded scrollbar-thin scrollbar-track-transparent scrollbar-thumb-card h-full overflow-auto px-4">
+      <!-- Grupo: SIRCO -->
+      <div class="mx-1 flex items-center justify-between py-3">
+        <small class="sidebar-group-label text-muted-foreground/50 text-xs font-semibold">SIRCO</small>
+      </div>
+      <ul class="flex flex-col">
+        <li>
+          <a href="/estadisticas" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2 {{if eq .ActiveRoute "/estadisticas"}}text-primary{{end}}">
+            <img src="/static/assets/icons/heroicons/outline/chart-pie.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+            <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Estadísticas</span>
+          </a>
+        </li>
+        <li>
+          <details class="sidebar-submenu group" {{if hasPrefix .ActiveRoute "/comunicaciones"}}open{{end}}>
+            <summary class="text-muted-foreground hover:text-foreground flex grow cursor-pointer items-center gap-4 rounded-lg px-2 py-2 list-none">
+              <img src="/static/assets/icons/heroicons/outline/document-magnifying-glass.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+              <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide flex-1">Comunicaciones</span>
+              <img src="/static/assets/icons/heroicons/outline/plus.svg" alt="" class="h-4 w-4 sidebar-icon-closed" />
+              <img src="/static/assets/icons/heroicons/outline/minus.svg" alt="" class="h-4 w-4 sidebar-icon-open hidden" />
+            </summary>
+            <ul class="border-border text-muted-foreground flex flex-col border-dashed ltr:border-l ltr:pl-2 ltr:ml-4 mt-1">
+              <li><a href="/comunicaciones/crear" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs {{if eq .ActiveRoute "/comunicaciones/crear"}}text-primary{{end}}">Radicar comunicaciones</a></li>
+              <li><a href="/comunicaciones" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs {{if eq .ActiveRoute "/comunicaciones"}}text-primary{{end}}">Consultar comunicaciones</a></li>
+              <li><a href="/comunicaciones/asignaciones" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs {{if eq .ActiveRoute "/comunicaciones/asignaciones"}}text-primary{{end}}">Consultar asignaciones</a></li>
+              <li><a href="/comunicaciones/reportes" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs {{if eq .ActiveRoute "/comunicaciones/reportes"}}text-primary{{end}}">Reportes</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <a href="/notificaciones" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2 {{if eq .ActiveRoute "/notificaciones"}}text-primary{{end}}">
+            <div class="relative">
+              <img src="/static/assets/icons/heroicons/outline/bell.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+              {{if gt .UnreadNotifications 0}}
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px] font-bold">
+                {{if gt .UnreadNotifications 99}}99+{{else}}{{.UnreadNotifications}}{{end}}
+              </span>
+              {{end}}
+            </div>
+            <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Notificaciones</span>
+          </a>
+        </li>
+        <li>
+          <details class="sidebar-submenu" {{if hasPrefix .ActiveRoute "/auditoria"}}open{{end}}>
+            <summary class="text-muted-foreground hover:text-foreground flex grow cursor-pointer items-center gap-4 rounded-lg px-2 py-2 list-none">
+              <img src="/static/assets/icons/heroicons/outline/shield-check.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+              <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide flex-1">Auditoría</span>
+            </summary>
+            <ul class="border-border text-muted-foreground flex flex-col border-dashed ltr:border-l ltr:pl-2 ltr:ml-4 mt-1">
+              <li><a href="/auditoria" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs {{if eq .ActiveRoute "/auditoria"}}text-primary{{end}}">Listar logs</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <details class="sidebar-submenu" {{if hasPrefix .ActiveRoute "/configuracion"}}open{{end}}>
+            <summary class="text-muted-foreground hover:text-foreground flex grow cursor-pointer items-center gap-4 rounded-lg px-2 py-2 list-none">
+              <img src="/static/assets/icons/heroicons/outline/cog.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+              <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide flex-1">Configuración</span>
+            </summary>
+            <ul class="border-border text-muted-foreground flex flex-col border-dashed ltr:border-l ltr:pl-2 ltr:ml-4 mt-1">
+              <li><a href="/configuracion/tipos-comunicaciones" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs">Tipos de comunicaciones</a></li>
+              <li><a href="/configuracion/estados-comunicaciones" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs">Estados de comunicaciones</a></li>
+            </ul>
+          </details>
+        </li>
+      </ul>
+
+      <!-- Grupo: Administración -->
+      <div class="mx-1 flex items-center justify-between py-3">
+        <small class="sidebar-group-label text-muted-foreground/50 text-xs font-semibold">Administración</small>
+      </div>
+      <ul class="flex flex-col">
+        <li>
+          <a href="/usuarios" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2 {{if hasPrefix .ActiveRoute "/usuarios"}}text-primary{{end}}">
+            <img src="/static/assets/icons/heroicons/outline/users.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+            <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Usuarios y roles</span>
+          </a>
+        </li>
+        <li>
+          <details class="sidebar-submenu" {{if hasPrefix .ActiveRoute "/dependencias"}}open{{end}}>
+            <summary class="text-muted-foreground hover:text-foreground flex grow cursor-pointer items-center gap-4 rounded-lg px-2 py-2 list-none">
+              <img src="/static/assets/icons/heroicons/outline/cube.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+              <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide flex-1">Dependencias</span>
+            </summary>
+            <ul class="border-border text-muted-foreground flex flex-col border-dashed ltr:border-l ltr:pl-2 ltr:ml-4 mt-1">
+              <li><a href="/dependencias/crear" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs">Crear dependencia</a></li>
+              <li><a href="/dependencias" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs">Listar dependencias</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <a href="/empresas" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2">
+            <img src="/static/assets/icons/heroicons/outline/rectangle-group.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+            <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Empresas</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Grupo: Gestión documental -->
+      <div class="mx-1 flex items-center justify-between py-3">
+        <small class="sidebar-group-label text-muted-foreground/50 text-xs font-semibold">Gestión documental</small>
+      </div>
+      <ul class="flex flex-col">
+        <li>
+          <details class="sidebar-submenu" {{if hasPrefix .ActiveRoute "/series-documentales"}}open{{end}}>
+            <summary class="text-muted-foreground hover:text-foreground flex grow cursor-pointer items-center gap-4 rounded-lg px-2 py-2 list-none">
+              <img src="/static/assets/icons/heroicons/outline/folder.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+              <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide flex-1">Clasificación documental</span>
+            </summary>
+            <ul class="border-border text-muted-foreground flex flex-col border-dashed ltr:border-l ltr:pl-2 ltr:ml-4 mt-1">
+              <li><a href="/series-documentales" class="hover:bg-card inline-block w-full rounded-lg px-4 py-2 text-xs">Series documentales</a></li>
+            </ul>
+          </details>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mx-4 my-4 space-y-1">
+    <a
+      target="_blank"
+      href="https://github.com/yovannylopez/docsy-dashboard"
+      class="-sm hover:bg-card group flex h-9 cursor-pointer items-center justify-start p-2">
+      <img src="/static/assets/icons/heroicons/outline/information-circle.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+      <div class="sidebar-version ml-3 truncate text-[10px] font-semibold tracking-wide">
+        <span class="bg-primary/10 text-primary px-2 font-semibold">v{{.AppVersion}}</span>
+      </div>
+    </a>
+  </div>
+</nav>
+{{end}}

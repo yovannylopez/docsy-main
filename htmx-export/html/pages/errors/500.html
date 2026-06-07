@@ -1,0 +1,16 @@
+{{define "error500"}}
+{{template "base-head" .}}
+<div class="flex h-screen w-full items-center justify-center">
+  <div class="bg-background flex max-w-lg flex-col items-center justify-center gap-2 rounded-lg p-8 text-center">
+    <img src="/static/assets/images/500.svg" alt="" class="w-[300px] h-[150px] text-muted-foreground" />
+    <h1 class="text-foreground text-4xl font-bold">Oops! Server Error</h1>
+    <p class="text-muted-foreground text-sm">
+      Please try again later. If the issue persists, feel free to contact us for assistance.
+    </p>
+    <a href="/" class="font-semibold focus-visible:outline-none flex items-center justify-center focus-visible:ring-2 focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary px-5 py-2 text-sm rounded-lg">
+      Homepage
+    </a>
+  </div>
+</div>
+{{template "base-foot" .}}
+{{end}}

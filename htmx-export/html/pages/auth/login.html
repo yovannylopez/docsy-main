@@ -1,0 +1,115 @@
+{{define "login"}}
+{{template "base-head" .}}
+<div class="flex h-screen w-screen">
+  {{template "auth-left-panel" .}}
+  {{template "auth-right-start" .}}
+
+  <!-- HTMX: hx-post="/login" hx-target="#login-feedback" hx-swap="innerHTML" -->
+  <form class="my-10 space-y-6" method="post" action="/login" id="login-form">
+    <div class="text-center">
+      <h2 class="text-foreground mb-1 text-3xl font-semibold">Hola de nuevo<span class="text-primary">!</span></h2>
+      <p class="text-muted-foreground text-sm">Ingresa tus credenciales para acceder a tu cuenta.</p>
+    </div>
+
+    <div id="login-feedback">
+      {{if .Error}}{{template "alert-error" .}}{{end}}
+    </div>
+
+    <div class="before:border-muted after:border-muted my-4 flex items-center before:mt-0.5 before:flex-1 before:border-t after:mt-0.5 after:flex-1 after:border-t">
+      <p class="text-muted-foreground mx-4 mb-0 text-center text-sm">o</p>
+    </div>
+
+    <div class="space-y-3 text-left">
+      <div class="form__group">
+        <div class="relative">
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value="{{.Email}}"
+            class="peer block{{if .EmailError}} is__invalid-input{{end}}"
+            placeholder=" "
+            {{if .Loading}}disabled{{end}}
+            autocomplete="email"
+            required />
+          <label
+            for="email"
+            class="bg-background text-muted-foreground peer-focus:text-primary absolute top-2 z-10 origin-[0] -translate-y-4 scale-95 transform px-2 text-sm duration-300 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2 peer-focus:-translate-y-4 peer-focus:scale-95 peer-focus:px-2 ltr:left-1 rtl:right-1{{if .EmailError}} peer-focus:text-destructive!{{end}}">
+            Correo electrónico
+          </label>
+        </div>
+        {{if .EmailError}}
+        <div class="is__invalid-error">
+          <div>{{.EmailError}}</div>
+        </div>
+        {{end}}
+      </div>
+
+      <div class="form__group">
+        <div class="relative">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="peer block{{if .PasswordError}} is__invalid-input{{end}}"
+            placeholder=" "
+            {{if .Loading}}disabled{{end}}
+            autocomplete="current-password"
+            required />
+          <label
+            for="password"
+            class="bg-background text-muted-foreground peer-focus:text-primary absolute top-2 z-10 origin-[0] -translate-y-4 scale-95 transform px-2 text-sm duration-300 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2 peer-focus:-translate-y-4 peer-focus:scale-95 peer-focus:px-2 ltr:left-1 rtl:right-1{{if .PasswordError}} peer-focus:text-destructive!{{end}}">
+            Contraseña
+          </label>
+          <span
+            class="text-muted-foreground absolute top-2 cursor-pointer ltr:right-3 rtl:left-3"
+            onclick="togglePassword('password', this)"
+            role="button"
+            tabindex="0"
+            aria-label="Mostrar u ocultar contraseña">
+            <img src="/static/assets/icons/heroicons/outline/eye-off.svg" alt="" class="h-5 w-5 password-toggle-icon" data-visible-icon="/static/assets/icons/heroicons/outline/eye.svg" data-hidden-icon="/static/assets/icons/heroicons/outline/eye-off.svg" />
+          </span>
+        </div>
+        {{if .PasswordError}}
+        <div class="is__invalid-error">
+          <div>{{.PasswordError}}</div>
+        </div>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="mb-2 flex items-center justify-between space-x-3">
+      <div class="flex items-center">
+        <input id="remember-me" name="remember_me" type="checkbox" value="1" {{if .RememberMe}}checked{{end}} />
+        <label for="remember-me" class="text-muted-foreground ml-2 block text-sm"> Recuérdame </label>
+      </div>
+
+      <a href="/recuperar-contrasena" class="font-semibold focus-visible:outline-none flex items-center justify-center focus-visible:ring-2 focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 bg-transparent text-primary hover:bg-primary/10 focus-visible:ring-primary px-3 py-1 text-xs rounded-lg">
+        Olvidaste tu contraseña?
+      </a>
+    </div>
+
+    <div>
+      <button
+        type="submit"
+        class="font-semibold focus-visible:outline-none flex items-center justify-center focus-visible:ring-2 focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary px-5 py-2 text-sm rounded-lg w-full"
+        {{if .Loading}}disabled{{end}}>
+        {{if .Loading}}
+        <span class="inline-flex items-center">
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Iniciando sesión...
+        </span>
+        {{else}}
+        Ingresar
+        {{end}}
+      </button>
+    </div>
+  </form>
+
+  {{template "auth-right-end" .}}
+</div>
+{{template "base-foot" .}}
+{{end}}

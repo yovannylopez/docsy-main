@@ -1,0 +1,35 @@
+{{define "auth-left-panel"}}
+<div class="auth-bg bg-primary hidden flex-1 items-center justify-center bg-cover lg:flex">
+  <div class="max-w-2xl space-y-4 p-8 text-center text-white">
+    <img src="{{assetURL "/assets/images/avatar-default.svg"}}" alt="docsy" class="mx-auto h-32 opacity-80" />
+    <h1 class="text-4xl font-bold">"Rápido, eficiente y productivo"</h1>
+    <p class="text-md font-light">
+      <b class="text-md text-white font-bold"> docsy </b> es una plataforma digital diseñada para que las organizaciones gestionen sus documentos de manera eficiente, segura y cumpliendo con la normativa colombiana del Archivo General de la Nación (AGN).
+    </p>
+  </div>
+</div>
+{{end}}
+
+{{define "auth-right-start"}}
+<div class="bg-background flex flex-1 items-center justify-center">
+  <div class="max-w-md overflow-y-auto px-4 sm:w-[500px]">
+    <div class="flex items-center justify-center gap-3">
+      <img src="{{assetURL "/assets/icons/only-logo.svg"}}" alt="docsy" class="h-30 w-100" />
+    </div>
+{{end}}
+
+{{define "auth-right-end"}}
+  </div>
+</div>
+{{end}}
+
+{{define "auth-layout"}}
+{{template "base-head" .}}
+<div class="flex h-screen w-screen">
+  {{template "auth-left-panel" .}}
+  {{template "auth-right-start" .}}
+  {{block "content" .}}{{end}}
+  {{template "auth-right-end" .}}
+</div>
+{{template "base-foot" .}}
+{{end}}

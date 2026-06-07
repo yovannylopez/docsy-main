@@ -1,0 +1,53 @@
+{{define "partials/sidebar"}}
+<nav
+  id="sidebar"
+  data-expanded="{{.SidebarExpanded}}"
+  class="bg-background hidden h-full flex-col justify-between pt-3 transition-all duration-300 lg:flex w-[210px] xl:w-[280px] sidebar-expanded">
+  <div class="overflow-hidden">
+    <div class="sidebar-logo-row mx-4 mb-2 flex h-9 items-center justify-between">
+      <div class="sidebar-logo flex items-center">
+        <img src="{{assetURL "/assets/icons/only-logo.svg"}}" alt="docsy" class="h-10 w-30" />
+      </div>
+      <button
+        type="button"
+        onclick="toggleSidebar()"
+        class="sidebar-toggle text-muted-foreground/50 hover:text-muted-foreground flex items-center justify-center rounded-md p-2 transition-all duration-200 focus:outline-hidden"
+        aria-label="Colapsar menú">
+        <img src="{{assetURL "/assets/icons/heroicons/solid/chevron-double-left.svg"}}" alt="" class="h-5 w-5" />
+      </button>
+    </div>
+
+    <div class="scrollbar-thumb--sm scrollbar-track-rounded scrollbar-thin scrollbar-track-transparent scrollbar-thumb-card h-full overflow-auto px-4">
+      <div class="mx-1 flex items-center justify-between py-3">
+        <small class="sidebar-group-label text-muted-foreground/50 text-xs font-semibold">Principal</small>
+      </div>
+      <ul class="flex flex-col">
+        <li>
+          <a href="/" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2 {{if eq .ActiveRoute "/"}}text-primary{{end}}">
+            <img src="{{assetURL "/assets/icons/heroicons/outline/chart-pie.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+            <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Inicio</span>
+          </a>
+        </li>
+        <li>
+          <a href="/usuarios" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2 {{if hasPrefix .ActiveRoute "/usuarios"}}text-primary{{end}}">
+            <img src="{{assetURL "/assets/icons/heroicons/outline/users.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+            <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Usuarios y roles</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mx-4 my-4 space-y-1">
+    <a
+      target="_blank"
+      href="https://github.com/yovannylopez/docsy-dashboard"
+      class="-sm hover:bg-card group flex h-9 cursor-pointer items-center justify-start p-2">
+      <img src="{{assetURL "/assets/icons/heroicons/outline/information-circle.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+      <div class="sidebar-version ml-3 truncate text-[10px] font-semibold tracking-wide">
+        <span class="bg-primary/10 text-primary px-2 font-semibold">v{{.AppVersion}}</span>
+      </div>
+    </a>
+  </div>
+</nav>
+{{end}}

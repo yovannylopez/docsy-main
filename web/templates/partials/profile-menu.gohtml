@@ -1,0 +1,84 @@
+{{define "partials/profile-menu"}}
+<div
+  id="profile-menu"
+  class="dropdown-content bg-background shadow-custom border-muted absolute z-20 mt-2 w-72 origin-top-right transform rounded-md border border-dashed py-4 ring-1 ring-transparent ring-opacity-5 ltr:right-0 rtl:left-0 hidden">
+  <div class="flex items-center px-4 pb-4">
+    <div class="w-10 shrink-0">
+      <img class="rounded-full" src="{{if .AvatarURL}}{{.AvatarURL}}{{else}}{{assetURL "/assets/images/avatar-default.svg"}}{{end}}" alt="" />
+    </div>
+    <div class="text-foreground overflow-hidden px-2 text-sm font-semibold">
+      <p class="text-foreground truncate text-ellipsis text-sm font-semibold">
+        {{if .UserName}}{{.UserName}}{{else}}Usuario{{end}}
+      </p>
+    </div>
+  </div>
+
+  <div class="border-border border-b border-dashed"></div>
+
+  <ul class="my-2 mx-2 flex flex-col">
+    <li>
+      <a href="/perfil" class="text-muted-foreground hover:bg-card hover:text-primary inline-flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs font-semibold">
+        <img src="{{assetURL "/assets/icons/heroicons/outline/user-circle.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+        Perfil
+      </a>
+    </li>
+    <li>
+      <a href="/configuracion" class="text-muted-foreground hover:bg-card hover:text-primary inline-flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs font-semibold">
+        <img src="{{assetURL "/assets/icons/heroicons/outline/cog-6-tooth.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+        Configuración
+      </a>
+    </li>
+    <li>
+      <form hx-post="/logout" hx-swap="none" hx-on::after-request="sessionStorage.removeItem('access_token'); sessionStorage.removeItem('refresh_token')">
+        <button type="submit" class="text-muted-foreground hover:bg-card hover:text-primary inline-flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs font-semibold">
+          <img src="{{assetURL "/assets/icons/heroicons/outline/logout.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+          Cerrar sesión
+        </button>
+      </form>
+    </li>
+  </ul>
+
+  <hr class="border-border border-dashed" />
+
+  <div class="mx-4 my-2">
+    <span class="text-foreground text-xs font-semibold">Variantes de color</span>
+    <div class="mt-2 grid grid-cols-4 gap-2">
+      <button type="button" onclick="setThemeColor('')" data-theme-color="" title="Base" aria-label="Base" class="theme-color-base focus-visible:ring-ring border-border bg-background hover:bg-card shadow-xs inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-dashed p-0">
+        <span class="block h-6 w-6 shrink-0 rounded-full bg-[#e11d48] ring-1 ring-border/40"></span>
+      </button>
+      <button type="button" onclick="setThemeColor('yellow')" data-theme-color="yellow" title="Amarillo" aria-label="Amarillo" class="theme-color-yellow focus-visible:ring-ring border-border bg-background hover:bg-card shadow-xs inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-dashed p-0">
+        <span class="block h-6 w-6 shrink-0 rounded-full bg-[#facc15] ring-1 ring-border/40"></span>
+      </button>
+      <button type="button" onclick="setThemeColor('green')" data-theme-color="green" title="Verde" aria-label="Verde" class="theme-color-green focus-visible:ring-ring border-border bg-background hover:bg-card shadow-xs inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-dashed p-0">
+        <span class="block h-6 w-6 shrink-0 rounded-full bg-[#22c55e] ring-1 ring-border/40"></span>
+      </button>
+      <button type="button" onclick="setThemeColor('blue')" data-theme-color="blue" title="Azul" aria-label="Azul" class="theme-color-blue focus-visible:ring-ring border-border bg-background hover:bg-card shadow-xs inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-dashed p-0">
+        <span class="block h-6 w-6 shrink-0 rounded-full bg-[#2490ff] ring-1 ring-border/40"></span>
+      </button>
+      <button type="button" onclick="setThemeColor('orange')" data-theme-color="orange" title="Naranja" aria-label="Naranja" class="theme-color-orange focus-visible:ring-ring border-border bg-background hover:bg-card shadow-xs inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-dashed p-0">
+        <span class="block h-6 w-6 shrink-0 rounded-full bg-[#ea580c] ring-1 ring-border/40"></span>
+      </button>
+      <button type="button" onclick="setThemeColor('red')" data-theme-color="red" title="Rojo" aria-label="Rojo" class="theme-color-red focus-visible:ring-ring border-border bg-background hover:bg-card shadow-xs inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-dashed p-0">
+        <span class="block h-6 w-6 shrink-0 rounded-full bg-[#cc0033] ring-1 ring-border/40"></span>
+      </button>
+      <button type="button" onclick="setThemeColor('violet')" data-theme-color="violet" title="Violeta" aria-label="Violeta" class="theme-color-violet focus-visible:ring-ring border-border bg-background hover:bg-card shadow-xs inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-dashed p-0">
+        <span class="block h-6 w-6 shrink-0 rounded-full bg-[#6e56cf] ring-1 ring-border/40"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="mx-4 my-2">
+    <span class="text-foreground text-xs font-semibold">Modo</span>
+    <div class="mt-2 grid grid-cols-2 gap-2">
+      <button type="button" onclick="setThemeMode('light')" class="theme-mode-light focus-visible:ring-ring border-border bg-background text-muted-foreground hover:bg-card hover:text-foreground shadow-xs inline-flex h-8 cursor-pointer items-center justify-start space-x-2 whitespace-nowrap rounded-md border border-dashed px-3 text-xs font-medium">
+        <img src="{{assetURL "/assets/icons/heroicons/outline/sun.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+        <span>Claro</span>
+      </button>
+      <button type="button" onclick="setThemeMode('dark')" class="theme-mode-dark focus-visible:ring-ring border-border bg-background text-muted-foreground hover:bg-card hover:text-foreground shadow-xs inline-flex h-8 cursor-pointer items-center justify-start space-x-2 whitespace-nowrap rounded-md border border-dashed px-3 text-xs font-medium">
+        <img src="{{assetURL "/assets/icons/heroicons/outline/moon.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+        <span>Oscuro</span>
+      </button>
+    </div>
+  </div>
+</div>
+{{end}}

@@ -23,3 +23,6 @@
 .cursor/settings.json
 .clinerules*
 memory-bank/
+
+/web/node_modules
+/web/dist

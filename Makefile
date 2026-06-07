@@ -1,4 +1,4 @@
-.PHONY: build run clean test
+.PHONY: build run clean test web-build web-watch
 
 # Variables
 BINARY_NAME=docsy-main
@@ -13,6 +13,14 @@ build:
 # Run the application
 run:
 	@go run ./cmd/
+
+# Build frontend CSS (Tailwind)
+web-build:
+	@cd web && npm install && npm run build
+
+# Watch frontend CSS during development
+web-watch:
+	@cd web && npm run watch
 
 # Clean build artifacts
 clean:
@@ -227,4 +235,6 @@ help:
 	@echo "  install-mockery - Install mockery tool"
 	@echo "  install-lint - Install golangci-lint tool"
 	@echo "  install-basic-tools - Install basic linting tools"
+	@echo "  web-build     - Compile Tailwind CSS (web/static/css/app.css)"
+	@echo "  web-watch     - Watch and recompile Tailwind CSS"
 	@echo "  help          - Show this help message"

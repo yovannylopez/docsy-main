@@ -1,0 +1,59 @@
+{{define "success-modal"}}
+<!--
+  Modal de éxito — referencia simplificada desde success-modal.component.html
+  Placeholders: .ModalID, .Title, .Summary, .DetailRows (slice de {Label, Value})
+-->
+<div id="{{.ModalID}}" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 hidden" role="dialog" aria-modal="true">
+  <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="bg-green-500 text-white px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <h3 class="text-xl font-semibold">{{.Title}}</h3>
+      </div>
+      <button type="button" onclick="closeModal('{{.ModalID}}')" class="text-white hover:text-gray-200 transition-colors" aria-label="Cerrar">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-6 py-6 overflow-y-auto flex-1">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+        <div class="flex items-center space-x-2 text-green-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="font-medium">{{.Summary}}</span>
+        </div>
+      </div>
+
+      {{range .Sections}}
+      <div class="bg-gray-50 rounded-lg p-4 mb-4">
+        <h4 class="font-semibold text-gray-700 mb-3">{{.Title}}</h4>
+        <div class="space-y-2 text-sm">
+          {{range .Rows}}
+          <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+            <span class="text-gray-600">{{.Label}}:</span>
+            <span class="font-medium break-words">{{.Value}}</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 p-6 bg-gray-50 border-t border-gray-200">
+      <button type="button" onclick="closeModal('{{.ModalID}}')" class="btn-secondary px-6 py-2 text-sm font-medium rounded-lg transition-colors">
+        Cerrar
+      </button>
+      {{if .PrimaryActionURL}}
+      <a href="{{.PrimaryActionURL}}" class="btn-primary px-6 py-2 text-sm font-medium rounded-lg transition-colors inline-flex items-center justify-center">
+        {{.PrimaryActionLabel}}
+      </a>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

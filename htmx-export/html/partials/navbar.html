@@ -1,0 +1,94 @@
+{{define "navbar"}}
+<!-- Placeholders: .UserName (string) -->
+<div class="bg-background relative">
+  <div class="mx-auto px-5">
+    <div class="flex items-center justify-between py-3.5 md:justify-start">
+      <div class="sm:order-1 md:hidden">
+        <button
+          type="button"
+          onclick="toggleMobileMenu()"
+          class="bg-muted text-muted-foreground focus:ring-primary hover:bg-muted-foreground hover:text-muted inline-flex items-center justify-center rounded-md p-2 focus:outline-hidden focus:ring-2 focus:ring-inset"
+          aria-expanded="false">
+          <span class="sr-only">Abrir menú</span>
+          <img src="/static/assets/icons/heroicons/outline/menu.svg" alt="" class="h-6 w-6" />
+        </button>
+      </div>
+
+      <div class="flex items-center justify-start gap-3 sm:order-2 ltr:md:mr-10 rtl:md:ml-10 lg:hidden">
+        <img src="/static/assets/icons/only-logo.svg" alt="docsy" class="h-8" />
+      </div>
+
+      <div class="hidden space-x-10 sm:order-3 md:flex">
+        <div class="relative flex items-center">
+          <div class="absolute left-3 pointer-events-none">
+            <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <!-- HTMX: hx-get="/buscar" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" -->
+          <input
+            type="text"
+            name="q"
+            placeholder="Buscar..."
+            class="w-64 pl-10 pr-10 py-2 text-sm bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-muted-foreground placeholder-muted-foreground/50" />
+        </div>
+      </div>
+
+      <div class="items-center justify-end sm:order-4 md:flex md:flex-1 lg:w-0">
+        <div class="relative ml-3 dropdown">
+          <button
+            type="button"
+            onclick="toggleProfileMenu()"
+            id="profile-menu-button"
+            class="bg-card relative flex rounded-full text-sm"
+            aria-haspopup="true">
+            <span class="sr-only">Abrir menú de usuario</span>
+            <img class="size-9 shrink-0 rounded-md" src="/static/assets/images/avatar-default.svg" alt="" />
+          </button>
+          <div
+            id="profile-menu"
+            class="dropdown-content bg-background shadow-custom border-muted absolute z-20 mt-2 w-60 origin-top-right transform rounded-md border border-dashed py-4 ring-1 ring-transparent ring-opacity-5 ltr:right-0 rtl:left-0 hidden">
+            <div class="flext-row flex items-center px-4 pb-4">
+              <div class="w-10 shrink-0">
+                <img class="rounded-md" src="/static/assets/images/avatar-default.svg" alt="" />
+              </div>
+              <div class="text-foreground overflow-hidden px-2 text-sm font-semibold">
+                <p class="text-muted-foreground truncate text-ellipsis text-xs font-semibold">{{.UserName}}</p>
+              </div>
+            </div>
+            <div class="border-border border-b border-dashed"></div>
+            <ul class="my-2 mx-2 flex flex-col">
+              <li>
+                <a href="/perfil" class="text-muted-foreground hover:bg-card hover:text-primary inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs font-semibold">
+                  <img src="/static/assets/icons/heroicons/outline/user.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+                  Mi perfil
+                </a>
+              </li>
+              <li>
+                <a href="/logout" class="text-muted-foreground hover:bg-card hover:text-primary inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs font-semibold">
+                  <img src="/static/assets/icons/heroicons/outline/logout.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+                  Cerrar sesión
+                </a>
+              </li>
+            </ul>
+            <hr class="border-border border-dashed" />
+            <div class="mx-4 my-2">
+              <span class="text-foreground text-xs font-semibold">Modo</span>
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <button type="button" onclick="setThemeMode('light')" class="theme-mode-light focus-visible:ring-ring border-border bg-background text-muted-foreground hover:bg-card hover:text-foreground shadow-xs inline-flex h-8 cursor-pointer items-center justify-start space-x-2 whitespace-nowrap rounded-md border border-dashed px-3 text-xs font-medium">
+                  <img src="/static/assets/icons/heroicons/outline/sun.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+                  <span>Claro</span>
+                </button>
+                <button type="button" onclick="setThemeMode('dark')" class="theme-mode-dark focus-visible:ring-ring border-border bg-background text-muted-foreground hover:bg-card hover:text-foreground shadow-xs inline-flex h-8 cursor-pointer items-center justify-start space-x-2 whitespace-nowrap rounded-md border border-dashed px-3 text-xs font-medium">
+                  <img src="/static/assets/icons/heroicons/outline/moon.svg" alt="" class="h-5 w-5 text-muted-foreground/50" />
+                  <span>Oscuro</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
