@@ -1,0 +1,86 @@
+# ─── Entorno de desarrollo local ─────────────────────────────────────────────
+# Levanta PostgreSQL + Redis (dependencias de la app).
+#
+# Uso rápido:
+#   docker compose up -d          # solo dependencias
+#   docker compose up -d app      # stack completo (app + dependencias)
+#   docker compose down -v        # destruir todo incluyendo volúmenes
+#
+# La app también puede correr fuera de Docker apuntando al mismo host:
+#   make run   (asegúrate de tener el .env con DB_HOST=localhost)
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: go_boilerplate
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d go_boilerplate"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── Redis (rate limiting distribuido) ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # ── Aplicación (stack completo) ──────────────────────────────────────────────
+  # Opcional: usar `docker compose up app` para levantar todo junto.
+  # En desarrollo diario es más cómodo correr `make run` directamente.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: development
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8100"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: go_boilerplate
+      DB_SSLMODE: disable
+      JWT_SECRET: change-this-to-a-long-random-secret
+      TOKEN_EXPIRATION: 24h
+      REFRESH_DURATION: 168h
+      REDIS_URL: redis://redis:6379
+      REDIS_AUTH_RATE_LIMIT: "60"
+      REDIS_AUTH_RATE_WINDOW_SECS: "60"
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      MIGRATIONS_PATH: /migrations/core
+    ports:
+      - "8100:8100"
+    profiles:
+      - full
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,46 @@
+---
+description: Guardrails de arquitectura Go y configuración/secretos (docsy-main)
+globs: "**/*"
+alwaysApply: true
+---
+
+# Guardrails obligatorios
+
+## Clean Architecture (imports)
+
+Las capas viven **por bounded context**, no como `internal/domain` global: `internal/<bounded_context>/domain/`, `usecases/`, `infrastructure/`, `transport/` (p. ej. `internal/auth/domain/ports/`, `internal/users/infrastructure/`).
+
+- `internal/<modulo>/domain/**` **no** debe importar `.../infrastructure/`, `.../transport/`, drivers SQL, Echo, ni paquetes de adaptadores.
+- `internal/<modulo>/usecases/**` deben depender de **puertos** (`domain/ports`), no de adaptadores concretos; hoy hay imports a `infrastructure/security` para helpers (`depguard` solo aplica a `**/internal/**/domain/**` hasta alinear eso).
+- **CI:** `depguard` en `.golangci.yml` (regla `domain_no_outer_layers`) bloquea imports prohibidos en `**/internal/**/domain/**/*.go`. Al añadir un módulo bajo `internal/<nuevo>/`, extiende la lista `deny` en ese archivo para `.../internal/<nuevo>/infrastructure` y `.../internal/<nuevo>/transport`.
+- El cableado concreto vive en `internal/<modulo>/infrastructure/container/` y en `cmd/composition/`.
+- Ante conflicto, prevalecen `docs/ARCHITECTURE.md` y `docs/CONSTITUTION.md`.
+
+## Errores
+
+- Propagar con `fmt.Errorf("...: %w", err)` cuando el error deba inspeccionarse arriba; en transport mapear con `pkg/responses` / `pkg/http_status` sin filtrar internals al cliente.
+
+## Verificación local (`make test`, `make verify`)
+
+Tras ejecutar el target acordado (p. ej. `make test`, `make verify`), si falla:
+
+- **Leer el output completo**, clasificar el fallo (compilación, lint, test unitario, integración, posible flake).
+- **Intentar correcciones acotadas** por tu cuenta: p. ej. hasta **dos rondas** para errores claros y reproducibles de compilación, lint o tests deterministas.
+- **Parar y pedir input humano** si el fallo persiste, es ambiguo, parece no determinista (flake), requiere decisión de producto/arquitectura, o no puedes corregir sin ensayar cambios grandes a ciegas.
+
+Esto no sustituye revisión en PR; reduce ida y vuelta solo para fallos mecánicos obvios.
+
+## Edición incremental (implementación continua)
+
+Al implementar varias tareas seguidas sobre los **mismos archivos** (p. ej. varias historias o iteraciones del mismo plan):
+
+- **Preservar** el código ya existente salvo que la tarea pida explícitamente eliminar o sustituir comportamiento.
+- **Imports y structs:** cambios **aditivos** por defecto (nuevos campos, nuevos imports siguiendo el agrupamiento del archivo). Refactor destructivo solo si el alcance lo indica.
+- Evitar “reescribir el archivo desde cero”: eso suele borrar trabajo de pasadas anteriores o de otras historias.
+
+## Variables de entorno y secretos
+
+- **Fuente permitida de nombres de variables:** `.env.example` en la raíz del repo y el código en `pkg/config` / `internal/shared/infrastructure/config/` que las consume.
+- **Prohibido** inventar nuevas variables de entorno sin: (1) añadirlas a `.env.example` con comentario, y (2) cablearlas en la capa de config existente.
+- **Prohibido** escribir secretos, tokens o contraseñas en código fuente, en mensajes de error devueltos al cliente, o en logs. Usar `pkg/config` y campos estructurados sin valores sensibles (ver skill `go-logging`).
+- **No** asumir que existe un `.env` local con valores reales: el agente no debe leer `.env` del usuario salvo que el humano lo indique explícitamente.

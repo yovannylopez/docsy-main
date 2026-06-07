@@ -1,0 +1,99 @@
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - gosec
+    - goconst
+    - gocyclo
+    - dupl
+    - misspell
+    - unparam
+    - nakedret
+    - prealloc
+    - gocritic
+    - gocognit
+    - gochecknoinits
+    - gochecknoglobals
+    - lll
+    - noctx
+    - nolintlint
+    - rowserrcheck
+    - sqlclosecheck
+    - wastedassign
+    - mnd
+    - gomoddirectives
+    - gomodguard_v2
+    - depguard
+
+  settings:
+    lll:
+      line-length: 150
+    # Go 1.26+ / x/tools: el analizador "inline" marca comparaciones con reflect.Ptr como
+    # "constante que debería inlinedarse"; en código de reflexión legible no aporta valor.
+    govet:
+      disable:
+        - inline
+    # Resultados de auditoría viven en internal/auth/domain/audit.go; OpenAPI excluido de goconst.
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    # Hexagonal / Clean Architecture: capas bajo internal/<bounded_context>/ (no hay internal/domain global).
+    # Añade entradas deny para nuevos bounded contexts (p. ej. internal/products/...).
+    depguard:
+      rules:
+        domain_no_outer_layers:
+          files:
+            - "**/internal/**/domain/**/*.go"
+          deny:
+            # Capas externas por módulo (prefijo: bloquea subpaquetes, p. ej. .../infrastructure/repositories)
+            - pkg: "github.com/yovannylopez/docsy-main/internal/auth/infrastructure"
+              desc: "domain no importa infrastructure — usar domain/ports"
+            - pkg: "github.com/yovannylopez/docsy-main/internal/users/infrastructure"
+              desc: "domain no importa infrastructure — usar domain/ports"
+            - pkg: "github.com/yovannylopez/docsy-main/internal/shared/infrastructure"
+              desc: "domain no importa infrastructure — usar domain/ports"
+            - pkg: "github.com/yovannylopez/docsy-main/internal/auth/transport"
+              desc: "domain no importa transport (Echo/handlers)"
+            - pkg: "github.com/yovannylopez/docsy-main/internal/users/transport"
+              desc: "domain no importa transport"
+            - pkg: "github.com/yovannylopez/docsy-main/internal/shared/transport"
+              desc: "domain no importa transport"
+            # Frameworks / drivers que no deben aparecer en dominio
+            - pkg: "github.com/labstack/echo/v4"
+              desc: "domain no importa Echo"
+            - pkg: "github.com/jmoiron/sqlx"
+              desc: "domain no importa sqlx"
+            - pkg: "database/sql"
+              desc: "domain no importa database/sql"
+
+  exclusions:
+    rules:
+      # Test files: fake credentials, no-context requests, literal numbers, repeated strings are expected
+      - path: "_test\\.go"
+        linters: [gosec, noctx, mnd, goconst, lll]
+      # test_utils stubs: same rationale
+      - path: "test_utils/"
+        linters: [gosec, mnd, goconst, lll]
+      # OpenAPI specs: intentionally long descriptions, literal HTTP/pagination numbers,
+      # and repeated schema strings (Type/Format/Description) that goconst no debe forzar a const.
+      - path: "openapi/"
+        linters: [gosec, mnd, lll, goconst]
+      # Workspace: local replace directives are intentional (go.work workspace setup)
+      - linters: [gomoddirectives]
+        text: "local replacement are not allowed"
+      # Spanish domain terms that misspell flags as English typos
+      - linters: [misspell]
+        text: "(directorios|dependencias|identificacion)"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -1,0 +1,16 @@
+---
+description: Sincronizar OpenAPI al cambiar HTTP handlers o DTOs públicos
+globs: "**/internal/**/transport/**/*.go,**/internal/**/infrastructure/openapi/**/*.go,cmd/composition/openapi_setup.go,cmd/composition/bootstrap.go"
+alwaysApply: false
+---
+
+# Contratos HTTP (OpenAPI)
+
+Al modificar rutas Echo, firmas de handler, códigos HTTP, cuerpos de request/response o auth:
+
+1. Actualizar el generador OpenAPI del bounded context en `internal/<modulo>/infrastructure/openapi/` (patrón existente: `*_operations.go`, `*_schemas.go`, `Setup*Spec`).
+2. Si añades tag o módulo nuevo: registrar en `cmd/composition/openapi_setup.go` y `bootstrap.go` según `docs/ARCHITECTURE.md` (“Agregar un nuevo módulo”).
+3. Ejecutar tests del paquete openapi del módulo si existen (p. ej. `setup_test.go`) y `make verify`.
+4. Si hay contratos OpenAPI de diseño en `docs/` o anexos del SDD, alinearlos con el código o anotar divergencias resueltas.
+
+Este proyecto no usa gRPC `.proto` en el core; si se añade, extender esta regla con generación/buf acordada por el equipo.

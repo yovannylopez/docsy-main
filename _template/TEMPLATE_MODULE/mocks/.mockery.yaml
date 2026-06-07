@@ -1,0 +1,9 @@
+# Mockery configuration for TEMPLATE_MODULE
+# Run: mockery (from the module root) or make generate-TEMPLATE_MODULE-mocks
+with-expecter: true
+packages:
+  github.com/yovannylopez/docsy-main/internal/TEMPLATE_MODULE/domain/ports:
+    config:
+      dir: "internal/TEMPLATE_MODULE/mocks"
+      outpkg: "mocks"
+      filename: "{{.InterfaceName | snakecase}}_mock.go"

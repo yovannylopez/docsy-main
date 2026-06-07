@@ -1,0 +1,13 @@
+---
+description: Makefile del repo — alinear con tooling y skills Go
+globs: Makefile
+alwaysApply: false
+---
+
+# Makefile (docsy-main)
+
+Al cambiar targets de **build, test, verify, format, generate-mocks** o herramientas:
+
+- Lee **`.cursor/skills/go-tooling/SKILL.md`** (`golangci-lint`, `go vet`, `make format`, perfiles `.golangci*.yml`).
+- Para mocks y tests, **`.cursor/skills/go-testing/SKILL.md`** (comandos `make generate-*-mocks`, cobertura).
+- Índice de skills: **`AGENTS.md`**. Estándares del proyecto: **`docs/ARCHITECTURE.md`**.

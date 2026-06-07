@@ -1,0 +1,23 @@
+---
+description: Indica qué skill de Go leer según la tarea (docsy-main)
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Skills de Go en este repo
+
+Antes de implementar o refactorizar backend, **lee el SKILL.md adecuado** (ruta relativa al repo):
+
+- **Estructura / slices / puertos:** `.cursor/skills/go-conventions/SKILL.md`
+- **HTTP Echo / responses:** `.cursor/skills/go-api-rest/SKILL.md`
+- **SQL / sqlx / migraciones:** `.cursor/skills/database-queries/SKILL.md`
+- **Validación:** `.cursor/skills/go-validation/SKILL.md`
+- **Errores:** `.cursor/skills/go-errors/SKILL.md`
+- **context.Context:** `.cursor/skills/go-context/SKILL.md`
+- **Logs:** `.cursor/skills/go-logging/SKILL.md`
+- **Tests / mocks / Object Mother (obligatorio en `internal/`):** `.cursor/skills/go-testing/SKILL.md`
+  - **Mockery:** no escribir ni editar a mano los generados bajo `internal/*/mocks/`. Si añades, renombras o cambias métodos de interfaces en `domain/ports`, ejecuta en terminal **`make generate-mocks`** (regenera auth + users base). Si solo tocaste un módulo: `make generate-auth-mocks`, `make generate-users-mocks` o `make generate-auth-mfa-mocks` según corresponda. En **auth**, interfaces nuevas o renombradas suelen requerir **añadir o ajustar la línea `mockery`** en el `Makefile` antes de generar; el detalle está en el skill.
+- **Lint / make verify:** `.cursor/skills/go-tooling/SKILL.md`
+- **Generics:** `.cursor/skills/go-generics/SKILL.md`
+
+Índice completo: `AGENTS.md` en la raíz. Arquitectura: `docs/ARCHITECTURE.md`. Reglas globales: `.cursor/rules/`.

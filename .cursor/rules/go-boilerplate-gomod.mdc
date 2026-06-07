@@ -1,0 +1,13 @@
+---
+description: go.mod / módulos — dependencias y convenciones docsy-main
+globs: "**/go.mod"
+alwaysApply: false
+---
+
+# go.mod (docsy-main)
+
+Al añadir o quitar dependencias, o tocar directivas **`replace`** hacia `pkg/*`:
+
+- Lee **`.cursor/skills/go-tooling/SKILL.md`** (`go mod tidy`, versiones de Go, coherencia con el toolchain del repo).
+- Tras cambios de módulo, conviene **`make verify`** según el caso.
+- Índice de skills: **`AGENTS.md`**; módulo path al forkear: **`docs/agent-guide.md`**. Módulo raíz: `github.com/yovannylopez/docsy-main` (ver `go.mod`).

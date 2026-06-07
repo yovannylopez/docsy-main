@@ -1,0 +1,11 @@
+---
+description: Migraciones SQL — seguir skill database-queries (docsy-main)
+globs: "migrations/**/*.sql"
+alwaysApply: false
+---
+
+# Migraciones SQL
+
+Al crear o editar archivos bajo **`migrations/`** (p. ej. `migrations/core/*.sql`), lee y aplica **[`.cursor/skills/database-queries/SKILL.md`](.cursor/skills/database-queries/SKILL.md)** (sqlx, PostgreSQL, convenciones del repo y `docs/architecture/database_infrastructure_context.md` cuando aplique).
+
+Arquitectura global: `docs/ARCHITECTURE.md`. Índice de skills: `AGENTS.md`.

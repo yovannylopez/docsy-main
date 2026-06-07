@@ -1,0 +1,11 @@
+/bin
+*.out
+*.html
+*.coverprofile
+*.cover
+*.cover.html
+*.cover.out
+*.cover.profile
+*.cover.html
+*.cover.out
+*.cover.profile

@@ -1,0 +1,70 @@
+---
+description: Project Development Guidelines
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# docsy-main Development Guidelines
+
+Lineamientos del stack y la estructura del repo. Última revisión: 2026-05-09
+
+## Active Technologies
+
+- Go (versión en `go.mod`, 1.26+) + Echo v4, sqlx, `golang-jwt/jwt/v5`, bcrypt (vía `PasswordHasher`), `github.com/pquerna/otp` (TOTP — 003), AES-GCM-256 (cifrado MFA secret), `pkg/responses`, `pkg/logging`, `pkg/validators`, `pkg/errors`, `pkg/constants`
+- PostgreSQL con sqlx — tablas `users`, `verification_tokens`, `password_history`, `system_config`, etc. (ver migraciones en `migrations/core/`)
+
+## Project Structure
+
+```text
+internal/auth/          ← bounded context autenticación (login, signup, MFA, change-password)
+  domain/ports/         ← interfaces: UserRepository, VerificationTokenRepository, TOTPProvider, MFASecretEncryptor, *MFAService
+  domain/dtos/          ← DTOs por feature (login, signup, mfa, change_password)
+  domain/entities/      ← User, Session, VerificationToken, AuditLog
+  infrastructure/
+    repositories/       ← sqlx adapters: user, session, audit, verification_token (003)
+    security/           ← JWT, bcrypt, totp_provider (003), mfa_secret_encryptor (003)
+    container/          ← AuthContainer (DI)
+    openapi/            ← specs OpenAPI por feature
+  usecases/             ← LoginUseCase, SignupUseCase, ChangePasswordUseCase, Setup/Confirm/Verify/DisableMFAUseCase (003)
+  transport/
+    handlers/           ← AuthHandler, SignupHandler, MFAHandler (003)
+    routes/             ← auth_routes.go
+    middleware/         ← AuthMiddleware (JWT)
+  mocks/                ← generados por Mockery
+
+migrations/core/        ← SQL secuencial 000000–000006
+pkg/                    ← módulos Go reutilizables (go.work workspace)
+cmd/composition/        ← DI raíz, router, bootstrap, OpenAPI
+```
+
+## Commands
+
+```bash
+# Verificar (lint + vet + fmt)
+make verify
+
+# Tests con coverage
+make test-coverage
+
+# Generar mocks de auth (incluye MFA desde 003)
+make generate-auth-mocks
+make generate-auth-mfa-mocks
+
+# Formatear
+make format
+
+# Scaffolding de nuevo módulo
+make scaffold MODULE=<nombre>
+```
+
+## Code Style
+
+Go (see `go.mod`): gofumpt + goimports; errores con `%w`; context.Context en todo I/O; table-driven tests; mocks Mockery en `internal/<módulo>/mocks/`
+
+## Recent Changes
+
+- 003-mfa-totp-setup: MFA TOTP (RFC 6238) — setup, confirm, verify, disable; TOTPProvider (pquerna/otp); AES-GCM para secreto en reposo; fork MFA en LoginUseCase; VerificationTokenRepository adapter; migration 000006 (índices)
+- 002-password-history: historial de contraseñas con políticas de reutilización
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

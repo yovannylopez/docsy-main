@@ -1,0 +1,25 @@
+/bin
+
+# Secretos — nunca commitear el .env real
+.env
+!.env.example
+
+# Mocks generados automáticamente
+/mocks/*.go
+
+# Storage de documentos
+/storage/
+
+# Coverage report
+/coverage.html
+/coverage.out 
+
+.DS_Store
+.idea/
+.vscode/
+
+# Cursor — archivos de estado y configuración personal (no del proyecto)
+.cursor/mcp.json
+.cursor/settings.json
+.clinerules*
+memory-bank/

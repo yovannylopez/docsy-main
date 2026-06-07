@@ -1,0 +1,15 @@
+go 1.26.2
+
+use (
+	.
+	./pkg/config
+	./pkg/constants
+	./pkg/databases
+	./pkg/errors
+	./pkg/http_status
+	./pkg/logging
+	./pkg/openapi
+	./pkg/pagination
+	./pkg/responses
+	./pkg/validators
+)

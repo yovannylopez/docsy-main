@@ -1,0 +1,37 @@
+# Reduce ruido en el índice de Cursor (no afecta a git).
+# Mantén fuera de aquí `.cursor/rules/`, `.cursor/commands/` y `.cursor/skills/`.
+
+# Binarios y artefactos de build
+/bin/
+/dist/
+/build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Cobertura y reportes generados
+coverage.out
+coverage.html
+*.coverprofile
+profile.out
+
+# Secretos y entorno local (el repo ya ignora .env en git)
+.env
+.env.*
+!.env.example
+
+# Almacenamiento local de la app
+/storage/
+
+# Sistema / IDE (duplicado útil si algo no está en .gitignore del workspace)
+.DS_Store
+.idea/
+
+# Logs y temporales
+*.log
+/tmp/
+
+# Copias de respaldo de specs (si reaparecen)
+**/*.md.bak
+**/*.md.bak2
