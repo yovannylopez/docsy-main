@@ -1,0 +1,40 @@
+{{define "users/list"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+<div class="w-full max-w-[98%] mx-auto space-y-4">
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+  {{template "partials/alert-success-message" .Success}}
+
+  <div class="bg-card shadow-custom rounded-lg border border-border p-4">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <h3 class="text-foreground text-lg font-semibold">Usuarios del sistema</h3>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <form method="get" action="/usuarios" class="flex gap-2">
+          <input
+            type="search"
+            name="q"
+            value="{{.Query}}"
+            placeholder="Buscar usuarios..."
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm sm:w-56" />
+          <button type="submit" class="btn btn-secondary rounded-md px-3 py-2 text-sm font-medium">Buscar</button>
+        </form>
+        <a href="/usuarios/nuevo" class="btn btn-primary inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium">
+          Crear usuario
+        </a>
+      </div>
+    </div>
+    <p class="text-muted-foreground mt-2 text-sm">Mostrando {{len .Users}} de {{.Total}} usuarios</p>
+  </div>
+
+  <div id="users-table">
+    {{template "partials/users-table" .}}
+  </div>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

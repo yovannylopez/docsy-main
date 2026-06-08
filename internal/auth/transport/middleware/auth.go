@@ -76,6 +76,17 @@ func userHasPermission(u *entities.User, permission string) bool {
 	return slices.Contains(u.PermissionNames, permission)
 }
 
+// CheckUserPermission reports whether the user is super_admin or has the named permission.
+func CheckUserPermission(u *entities.User, permission string) bool {
+	if u == nil {
+		return false
+	}
+	if userIsSuperAdmin(u) {
+		return true
+	}
+	return userHasPermission(u, permission)
+}
+
 // RequirePermission requires a specific permission after Authenticate.
 func RequirePermission(permission string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -84,10 +95,7 @@ func RequirePermission(permission string) echo.MiddlewareFunc {
 			if !ok || u == nil {
 				return responses.Unauthorized(c, "User not authenticated")
 			}
-			if userIsSuperAdmin(u) {
-				return next(c)
-			}
-			if !userHasPermission(u, permission) {
+			if !CheckUserPermission(u, permission) {
 				return responses.Forbidden(c, "Permission denied")
 			}
 			return next(c)

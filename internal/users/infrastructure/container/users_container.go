@@ -65,3 +65,14 @@ func (c *UsersContainer) GetUsersHandler() *usersHandlers.UsersHandler {
 		c.getUserByIDUseCase,
 	)
 }
+
+// GetUsersPageHandler returns the server-rendered users page handler.
+func (c *UsersContainer) GetUsersPageHandler() *usersHandlers.UsersPageHandler {
+	return usersHandlers.NewUsersPageHandler(
+		c.getUsersUseCase,
+		c.createUsersUseCase,
+		c.updateUserUseCase,
+		c.searchUsersUseCase,
+		c.getUserByIDUseCase,
+	)
+}

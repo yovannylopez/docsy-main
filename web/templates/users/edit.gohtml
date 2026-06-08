@@ -1,0 +1,81 @@
+{{define "users/edit"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+<div class="w-full max-w-[98%] mx-auto space-y-6">
+  {{template "partials/alert-success-message" .Success}}
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+
+  <div class="bg-card shadow-custom rounded-lg border border-border p-6">
+    <form method="post" action="/usuarios/{{.User.ID}}/editar" class="space-y-6">
+      <div>
+        <h3 class="text-foreground border-border mb-4 border-b pb-2 text-lg font-semibold">Información personal</h3>
+        <div class="mb-6">
+          <label for="email" class="text-foreground mb-1 block text-sm font-medium">Email <span class="text-destructive">*</span></label>
+          <input type="email" id="email" name="email" value="{{.User.Email}}" required
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <label for="first_name" class="text-foreground mb-1 block text-sm font-medium">Nombre <span class="text-destructive">*</span></label>
+            <input type="text" id="first_name" name="first_name" value="{{.User.FirstName}}" required
+              class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+          </div>
+          <div>
+            <label for="last_name" class="text-foreground mb-1 block text-sm font-medium">Apellido <span class="text-destructive">*</span></label>
+            <input type="text" id="last_name" name="last_name" value="{{.User.LastName}}" required
+              class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+          </div>
+          <div>
+            <label for="identification_type" class="text-foreground mb-1 block text-sm font-medium">Tipo de identificación</label>
+            <select id="identification_type" name="identification_type" class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+              {{range .IDTypes}}
+              <option value="{{.Value}}" {{if eq $.User.IdentificationType .Value}}selected{{end}}>{{.Label}}</option>
+              {{end}}
+            </select>
+          </div>
+          <div>
+            <label for="identification_number" class="text-foreground mb-1 block text-sm font-medium">Número de identificación</label>
+            <input type="text" id="identification_number" name="identification_number" value="{{.User.IdentificationNumber}}"
+              class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+          </div>
+        </div>
+        <div class="mt-6">
+          <label for="phone" class="text-foreground mb-1 block text-sm font-medium">Teléfono (opcional)</label>
+          <input type="text" id="phone" name="phone" value="{{.User.Phone}}"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-foreground border-border mb-4 border-b pb-2 text-lg font-semibold">Estado y configuraciones</h3>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="is_active" value="1" class="border-border rounded" {{if .User.IsActive}}checked{{end}} />
+            <span class="text-foreground">Usuario activo</span>
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="is_verified" value="1" class="border-border rounded" {{if .User.IsVerified}}checked{{end}} />
+            <span class="text-foreground">Email verificado</span>
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="mfa_enabled" value="1" class="border-border rounded" {{if .User.MFAEnabled}}checked{{end}} />
+            <span class="text-foreground">MFA habilitado</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="border-border flex justify-between border-t pt-6">
+        <a href="/usuarios" class="btn btn-secondary rounded-md px-4 py-2 text-sm font-medium">Cancelar</a>
+        <button type="submit" class="btn btn-primary rounded-md px-4 py-2 text-sm font-medium">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

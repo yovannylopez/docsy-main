@@ -68,7 +68,8 @@ En logout se borran ambos (cookie en servidor, `sessionStorage` en cliente).
 
 ### Rutas protegidas
 
-`WebAuthMiddleware.RequireAuth()` aplica solo a rutas web (`/`, futuro `/usuarios`, etc.). No afecta `/api` ni `/static`.
+`WebAuthMiddleware.RequireAuth()` aplica a rutas web protegidas (`/`, `/usuarios`, `/auditoria`, etc.).  
+`WebAuthMiddleware.RequirePermission("<perm>")` valida RBAC en rutas web (403 HTML si se deniega). No afecta `/api` ni `/static`.
 
 ## Variables de entorno
 
@@ -137,6 +138,17 @@ View models en `internal/shared/transport/web/components_data.go`.
 Mostrar modales: `openModal('id')` · Cerrar: `closeModal('id')` (`web/static/js/app.js`).
 
 Ver SDD: [`docs/sdd/010-web-users-audit-modals.md`](sdd/010-web-users-audit-modals.md).
+
+## Usuarios y auditoría (Fase 2 — Iteraciones B y C)
+
+| Ruta | Permiso | Handler |
+|------|---------|---------|
+| `GET /usuarios` | `users.read` | `UsersPageHandler.ListUsers` |
+| `GET /usuarios/nuevo`, `POST /usuarios` | `users.create` | create form + submit |
+| `GET/POST /usuarios/:id/editar` | `users.update` | edit form + submit |
+| `GET /auditoria` | `audit.read` | `AuditPageHandler.List` (partial HTMX en `#audit-table`) |
+
+Dual transport: mismos use cases que `/api/v1/users` y `GET /api/v1/auditoria`.
 
 ## API REST
 

@@ -6,7 +6,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/yovannylopez/docsy-main/internal/auth/domain/entities"
 	"github.com/yovannylopez/docsy-main/internal/auth/domain/ports"
+	weblayout "github.com/yovannylopez/docsy-main/internal/shared/transport/web"
 )
 
 const accessTokenCookie = "access_token"
@@ -57,4 +59,22 @@ func extractAccessToken(c echo.Context) string {
 	}
 
 	return ""
+}
+
+// RequirePermission requires a named RBAC permission for server-rendered routes.
+// Must run after RequireAuth so the user is present in context.
+func (m *WebAuthMiddleware) RequirePermission(permission string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			u, ok := c.Get("user").(*entities.User)
+			if !ok || u == nil {
+				return c.Redirect(http.StatusFound, "/login")
+			}
+			if !CheckUserPermission(u, permission) {
+				data := weblayout.AppLayoutFromEcho(c, "Acceso denegado", "No tienes permiso para ver esta sección", c.Path())
+				return c.Render(http.StatusForbidden, "forbidden", data)
+			}
+			return next(c)
+		}
+	}
 }

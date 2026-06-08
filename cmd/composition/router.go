@@ -25,12 +25,14 @@ const (
 // Router contains the routes of the application.
 // To add a new module, register its routes in SetupRoutes.
 type Router struct {
-	echo          *echo.Echo
-	container     *Container
-	authRoutes    *authRoutes.AuthRoutes
-	webAuthRoutes *authRoutes.WebAuthRoutes
-	auditRoutes   *authRoutes.AuditRoutes
-	healthRoutes  *sharedRoutes.HealthRoutes
+	echo           *echo.Echo
+	container      *Container
+	authRoutes     *authRoutes.AuthRoutes
+	webAuthRoutes  *authRoutes.WebAuthRoutes
+	webAuditRoutes *authRoutes.WebAuditRoutes
+	webUsersRoutes *usersRoutes.WebUsersRoutes
+	auditRoutes    *authRoutes.AuditRoutes
+	healthRoutes   *sharedRoutes.HealthRoutes
 }
 
 // NewRouter creates a new instance of Router with the dependencies of the base modules.
@@ -47,6 +49,14 @@ func NewRouter(e *echo.Echo, container *Container) *Router {
 			container.CreateLoginPageHandler(),
 			webAuthMW,
 			container.AuthRateLimit,
+		),
+		webUsersRoutes: usersRoutes.NewWebUsersRoutes(
+			container.UsersContainer.GetUsersPageHandler(),
+			webAuthMW,
+		),
+		webAuditRoutes: authRoutes.NewWebAuditRoutes(
+			container.CreateAuditPageHandler(),
+			webAuthMW,
 		),
 		auditRoutes:  authRoutes.NewAuditRoutes(container.AuthContainer.GetAuditHandler()),
 		healthRoutes: sharedRoutes.NewHealthRoutes(container.CreateHealthHandler()),
@@ -65,6 +75,8 @@ func (r *Router) SetupRoutes() {
 	// Server-rendered HTML routes (outside /api)
 	r.webAuthRoutes.Setup(r.echo)
 	r.webAuthRoutes.SetupProtected(r.echo)
+	r.webUsersRoutes.Setup(r.echo)
+	r.webAuditRoutes.Setup(r.echo)
 
 	api := r.echo.Group("/api")
 

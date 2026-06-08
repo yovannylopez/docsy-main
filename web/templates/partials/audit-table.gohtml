@@ -1,0 +1,45 @@
+{{define "partials/audit-table"}}
+<div class="bg-card shadow-custom overflow-hidden rounded-lg border border-border">
+  <div class="border-border border-b px-4 py-3">
+    <h2 class="text-foreground text-lg font-semibold">Logs de auditoría</h2>
+    <p class="text-muted-foreground text-sm">Mostrando {{len .AuditLogs}} de {{.Total}} logs</p>
+  </div>
+
+  {{if .AuditLogs}}
+  <div class="overflow-x-auto">
+    <table class="divide-border min-w-full divide-y">
+      <thead class="bg-muted/40">
+        <tr>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Fecha</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Usuario</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Acción</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Recurso</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Resultado</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Mensaje</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">IP</th>
+        </tr>
+      </thead>
+      <tbody class="divide-border bg-card divide-y">
+        {{range .AuditLogs}}
+        <tr class="hover:bg-muted/20">
+          <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.CreatedAtFormatted}}</td>
+          <td class="text-foreground px-6 py-4 font-mono text-xs whitespace-nowrap">{{.UserIDShort}}</td>
+          <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.ActionLabel}}</td>
+          <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.ResourceLabel}}</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{.ResultBadgeClass}}">{{.ResultLabel}}</span>
+          </td>
+          <td class="text-foreground max-w-xs truncate px-6 py-4 text-sm" title="{{.Message}}">{{.Message}}</td>
+          <td class="text-muted-foreground px-6 py-4 font-mono text-sm whitespace-nowrap">{{.IPAddress}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="text-muted-foreground p-8 text-center text-sm">No se encontraron logs de auditoría con los filtros aplicados.</div>
+  {{end}}
+
+  {{template "partials/table-pagination" .Pagination}}
+</div>
+{{end}}

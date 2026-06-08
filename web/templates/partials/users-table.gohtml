@@ -1,0 +1,52 @@
+{{define "partials/users-table"}}
+{{if .Users}}
+<div class="bg-card shadow-custom overflow-hidden rounded-lg border border-border">
+  <div class="overflow-x-auto">
+    <table class="divide-border min-w-full divide-y">
+      <thead class="bg-muted/40">
+        <tr>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Nombre</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Usuario</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Email</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Teléfono</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Estado</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Verificado</th>
+          <th class="text-muted-foreground px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-border bg-card divide-y">
+        {{range .Users}}
+        <tr class="hover:bg-muted/20">
+          <td class="text-foreground px-6 py-4 text-sm font-medium whitespace-nowrap">{{.PrimerNombre}} {{.SegundoNombre}}</td>
+          <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{if .NombreUsuario}}{{.NombreUsuario}}{{else}}N/A{{end}}</td>
+          <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.Email}}</td>
+          <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{if .Telefono}}{{.Telefono}}{{else}}N/A{{end}}</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{if .EstaActivo}}bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-200{{else}}bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200{{end}}">
+              {{if .EstaActivo}}Activo{{else}}Inactivo{{end}}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{if .EstaVerificado}}bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-200{{else}}bg-muted text-muted-foreground{{end}}">
+              {{if .EstaVerificado}}Verificado{{else}}Pendiente{{end}}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">
+            <a href="/usuarios/{{.ID}}/editar" class="text-primary hover:bg-primary/10 inline-flex rounded-md p-1 transition-colors" title="Editar usuario">
+              <img src="{{assetURL "/assets/icons/heroicons/outline/pencil_square.svg"}}" alt="" class="h-4 w-4" />
+            </a>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{template "partials/table-pagination" .Pagination}}
+{{else}}
+<div class="text-center py-12">
+  <p class="text-foreground text-sm font-medium">No hay usuarios</p>
+  <p class="text-muted-foreground mt-1 text-sm">No se encontraron usuarios{{if .Query}} para la búsqueda{{end}}.</p>
+</div>
+{{end}}
+{{end}}

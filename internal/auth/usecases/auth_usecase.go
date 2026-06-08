@@ -41,7 +41,7 @@ func NewAuthUseCase(
 func (uc *AuthUseCase) Authenticate(ctx context.Context, username, password string) (*entities.AuthToken, error) {
 	user, err := uc.userRepo.FindByEmail(ctx, username)
 	if err != nil || user == nil {
-		return nil, errors.New("invalid credentials")
+		return nil, authdomain.ErrInvalidCredentials
 	}
 
 	token, err := uc.tokenGenerator.GenerateToken(user, "")

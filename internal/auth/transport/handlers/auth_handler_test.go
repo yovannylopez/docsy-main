@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/yovannylopez/docsy-main/internal/auth/domain"
 	"github.com/yovannylopez/docsy-main/internal/auth/domain/dtos"
 	"github.com/yovannylopez/docsy-main/internal/auth/mocks"
 	authtest "github.com/yovannylopez/docsy-main/internal/auth/test_utils"
@@ -85,7 +86,7 @@ func TestAuthHandler_Login_Errors(t *testing.T) {
 		loginErr   error
 		wantStatus int
 	}{
-		{"invalid credentials", errors.New("invalid credentials"), http_status.BadRequest.Code},
+		{"invalid credentials", domain.ErrInvalidCredentials, http_status.BadRequest.Code},
 		{"account locked", errors.New("account is locked"), http_status.BadRequest.Code},
 		{"inactive", errors.New("account is not active"), http_status.BadRequest.Code},
 		{"other", errors.New("db down"), http_status.InternalError.Code},

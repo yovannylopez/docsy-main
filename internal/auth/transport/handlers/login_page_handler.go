@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/yovannylopez/docsy-main/internal/auth/domain"
 	"github.com/yovannylopez/docsy-main/internal/auth/domain/dtos"
 	"github.com/yovannylopez/docsy-main/internal/auth/domain/entities"
 	"github.com/yovannylopez/docsy-main/internal/auth/domain/ports"
@@ -13,17 +15,20 @@ import (
 	"github.com/yovannylopez/docsy-main/pkg/constants"
 )
 
-const accessTokenCookieName = "access_token"
+const (
+	accessTokenCookieName = "access_token"
+	secondsPerHour        = 60 * 60
+)
 
 const (
 	loginPageTitle    = "Hola de nuevo"
 	loginPageSubtitle = "Ingresa tus credenciales para acceder a tu cuenta."
 
-	msgInvalidCredentials = "Credenciales inválidas. Verifica tu correo y contraseña."
-	msgAccountLocked      = "La cuenta está bloqueada temporalmente. Intenta más tarde."
-	msgAccountInactive    = "La cuenta no está activa. Contacta al administrador."
-	msgFieldsRequired     = "El correo electrónico y la contraseña son obligatorios."
-	msgInternalError      = "Ocurrió un error interno. Intenta de nuevo."
+	msgLoginFailed     = "Credenciales inválidas. Verifica tu correo y contraseña."
+	msgAccountLocked   = "La cuenta está bloqueada temporalmente. Intenta más tarde."
+	msgAccountInactive = "La cuenta no está activa. Contacta al administrador."
+	msgFieldsRequired  = "El correo electrónico y la contraseña son obligatorios."
+	msgInternalError   = "Ocurrió un error interno. Intenta de nuevo."
 )
 
 // LoginPageData holds view data for the login page and HTMX partials.
@@ -165,12 +170,12 @@ func (h *LoginPageHandler) SubmitLogout(c echo.Context) error {
 }
 
 func (h *LoginPageHandler) handleLoginError(c echo.Context, err error, email string) error {
-	switch err.Error() {
-	case "invalid credentials":
-		return h.renderLoginAlert(c, http.StatusUnprocessableEntity, msgInvalidCredentials, email)
-	case "account is locked":
+	switch {
+	case errors.Is(err, domain.ErrInvalidCredentials):
+		return h.renderLoginAlert(c, http.StatusUnprocessableEntity, msgLoginFailed, email)
+	case err.Error() == "account is locked":
 		return h.renderLoginAlert(c, http.StatusUnprocessableEntity, msgAccountLocked, email)
-	case "account is not active":
+	case err.Error() == "account is not active":
 		return h.renderLoginAlert(c, http.StatusUnprocessableEntity, msgAccountInactive, email)
 	default:
 		return h.renderLoginAlert(c, http.StatusInternalServerError, msgInternalError, email)
@@ -205,25 +210,34 @@ func isHTMXRequest(c echo.Context) bool {
 	return c.Request().Header.Get("HX-Request") == "true"
 }
 
+func cookieSecure(c echo.Context) bool {
+	if c.Scheme() == "https" {
+		return true
+	}
+	return strings.EqualFold(c.Request().Header.Get("X-Forwarded-Proto"), "https")
+}
+
 func setAccessTokenCookie(c echo.Context, token string) {
-	maxAge := constants.AccessTokenExpirationHours * 3600
-	c.SetCookie(&http.Cookie{
+	maxAge := constants.AccessTokenExpirationHours * secondsPerHour
+	c.SetCookie(&http.Cookie{ //nolint:gosec // Secure follows request scheme; HttpOnly and SameSiteLax required for local HTTP dev
 		Name:     accessTokenCookieName,
 		Value:    token,
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
+		Secure:   cookieSecure(c),
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
 func clearAccessTokenCookie(c echo.Context) {
-	c.SetCookie(&http.Cookie{
+	c.SetCookie(&http.Cookie{ //nolint:gosec // Secure follows request scheme; HttpOnly and SameSiteLax required for local HTTP dev
 		Name:     accessTokenCookieName,
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   cookieSecure(c),
 		SameSite: http.SameSiteLaxMode,
 	})
 }

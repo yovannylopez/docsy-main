@@ -1,6 +1,6 @@
 # SDD 010 — Usuarios, auditoría y modales web (Fase 2)
 
-**Estado:** Iteración A completada · Iteraciones B y C pendientes  
+**Estado:** Iteraciones A, B y C completadas  
 **Bounded context:** `shared` (componentes), `users`, `auth` (audit)  
 **Referencia de diseño:** `htmx-export/html/` (no usado en runtime)
 
@@ -37,18 +37,18 @@ Helpers JS existentes: `openModal`, `closeModal`, `togglePassword` (`web/static/
 
 Tests: `renderer_test.go`, `components_data_test.go`.
 
-### B — Usuarios (pendiente)
+### B — Usuarios ✅
 
 - `UsersPageHandler`: list, create, edit
-- Rutas: `GET /usuarios`, `GET /usuarios/nuevo`, `GET /usuarios/:id/editar`, `POST /usuarios`, etc.
-- Templates: `web/templates/users/`
-- `WebRequirePermission` para `users.read` / `users.create` / `users.update`
+- Rutas: `GET /usuarios`, `GET /usuarios/nuevo`, `POST /usuarios`, `GET/POST /usuarios/:id/editar`
+- Templates: `web/templates/users/`, `partials/users-table`
+- `WebAuthMiddleware.RequirePermission` para `users.read` / `users.create` / `users.update`
 
-### C — Auditoría (pendiente)
+### C — Auditoría ✅
 
-- `AuditPageHandler`: list con filtros HTMX
+- `AuditPageHandler`: list con filtros HTMX (`hx-target="#audit-table"`)
 - Ruta: `GET /auditoria`
-- Template: `web/templates/audit/list.gohtml`
+- Templates: `web/templates/audit/list.gohtml`, `partials/audit-table`
 - Permiso: `audit.read`
 
 ## Convenciones

@@ -72,12 +72,12 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	responseData, err := h.loginService.Login(c.Request().Context(), &request, userAgent, ipAddress)
 	if err != nil {
 		// Handle specific errors
-		switch err.Error() {
-		case "invalid credentials":
+		switch {
+		case errors.Is(err, domain.ErrInvalidCredentials):
 			return responses.BadRequest(c, constants.InvalidCredentialsMessage)
-		case "account is locked":
+		case err.Error() == "account is locked":
 			return responses.BadRequest(c, "The account is temporarily locked")
-		case "account is not active":
+		case err.Error() == "account is not active":
 			return responses.BadRequest(c, "The account is not active")
 		default:
 			return responses.InternalError(c, constants.InternalErrorMessage)

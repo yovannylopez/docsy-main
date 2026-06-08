@@ -1,0 +1,89 @@
+{{define "users/create"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+<div class="w-full max-w-[98%] mx-auto space-y-6">
+  {{template "partials/alert-success-message" .Success}}
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+
+  <form method="post" action="/usuarios" class="space-y-6">
+    <div class="bg-card shadow-custom rounded-lg border border-border p-6">
+      <h3 class="text-foreground border-border mb-6 border-b pb-4 text-lg font-semibold">Información de acceso</h3>
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div>
+          <label for="email" class="text-foreground mb-1 block text-sm font-medium">Email <span class="text-destructive">*</span></label>
+          <input type="email" id="email" name="email" value="{{.Form.Email}}" required
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm{{if .Form.EmailError}} border-destructive{{end}}" />
+          {{if .Form.EmailError}}<p class="text-destructive mt-1 text-sm">{{.Form.EmailError}}</p>{{end}}
+        </div>
+        <div>
+          <label for="nombre_rol" class="text-foreground mb-1 block text-sm font-medium">Rol <span class="text-destructive">*</span></label>
+          <select id="nombre_rol" name="nombre_rol" required class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+            {{range .Roles}}
+            <option value="{{.}}" {{if eq $.Form.RoleName .}}selected{{end}}>{{.}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div>
+          <label for="password" class="text-foreground mb-1 block text-sm font-medium">Contraseña <span class="text-destructive">*</span></label>
+          <input type="password" id="password" name="password" required minlength="8"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm{{if .Form.PasswordError}} border-destructive{{end}}" />
+          {{if .Form.PasswordError}}<p class="text-destructive mt-1 text-sm">{{.Form.PasswordError}}</p>{{end}}
+        </div>
+        <div>
+          <label for="confirm_password" class="text-foreground mb-1 block text-sm font-medium">Confirmar contraseña <span class="text-destructive">*</span></label>
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="8"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+      </div>
+
+      <h3 class="text-foreground border-border mt-8 mb-4 border-b pb-2 text-md font-semibold">Información personal</h3>
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div>
+          <label for="primer_nombre" class="text-foreground mb-1 block text-sm font-medium">Primer nombre <span class="text-destructive">*</span></label>
+          <input type="text" id="primer_nombre" name="primer_nombre" value="{{.Form.FirstName}}" required
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="segundo_nombre" class="text-foreground mb-1 block text-sm font-medium">Apellido <span class="text-destructive">*</span></label>
+          <input type="text" id="segundo_nombre" name="segundo_nombre" value="{{.Form.LastName}}" required
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="tipo_identificacion" class="text-foreground mb-1 block text-sm font-medium">Tipo de identificación</label>
+          <select id="tipo_identificacion" name="tipo_identificacion" class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+            {{range .IDTypes}}
+            <option value="{{.Value}}" {{if eq $.Form.IdentificationType .Value}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div>
+          <label for="numero_identificacion" class="text-foreground mb-1 block text-sm font-medium">Número de identificación</label>
+          <input type="text" id="numero_identificacion" name="numero_identificacion" value="{{.Form.IdentificationNumber}}"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div class="md:col-span-2">
+          <label for="telefono" class="text-foreground mb-1 block text-sm font-medium">Teléfono (opcional)</label>
+          <input type="text" id="telefono" name="telefono" value="{{.Form.Phone}}"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+      </div>
+      {{if .Form.GeneralError}}<p class="text-destructive mt-4 text-sm">{{.Form.GeneralError}}</p>{{end}}
+    </div>
+
+    <div class="border-border flex flex-col gap-3 border-t pt-6 sm:flex-row sm:justify-between">
+      <a href="/usuarios" class="btn btn-secondary inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium">Listar usuarios</a>
+      <div class="flex gap-3">
+        <a href="/usuarios" class="btn btn-secondary rounded-md px-4 py-2 text-sm font-medium">Cancelar</a>
+        <button type="submit" class="btn btn-primary rounded-md px-4 py-2 text-sm font-medium">Crear usuario</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

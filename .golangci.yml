@@ -92,7 +92,7 @@ linters:
         text: "local replacement are not allowed"
       # Spanish domain terms that misspell flags as English typos
       - linters: [misspell]
-        text: "(directorios|dependencias|identificacion)"
+        text: "(directorios|dependencias|identificacion|configuracion|Variantes)"
 
 issues:
   max-issues-per-linter: 0

@@ -57,7 +57,7 @@ func NewRenderer() (*Renderer, error) {
 			return fmt.Errorf("resolve template path %q: %w", path, err)
 		}
 
-		content, err := os.ReadFile(path)
+		content, err := os.ReadFile(path) //nolint:gosec // path is under resolved templates dir via filepath.Walk
 		if err != nil {
 			return fmt.Errorf("read template %q: %w", path, err)
 		}

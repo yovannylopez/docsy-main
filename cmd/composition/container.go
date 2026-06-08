@@ -134,3 +134,8 @@ func (c *Container) CreateLoginPageHandler() *handlers.LoginPageHandler {
 		c.AuthContainer.AuthUseCase,
 	)
 }
+
+// CreateAuditPageHandler returns the server-rendered audit page handler.
+func (c *Container) CreateAuditPageHandler() *handlers.AuditPageHandler {
+	return handlers.NewAuditPageHandler(c.AuthContainer.ListAuditLogsUseCase)
+}

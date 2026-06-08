@@ -93,13 +93,13 @@ func (uc *LoginUseCase) Execute(
 		}
 		if user == nil {
 			uc.logLoginAttempt(ctx, request.Email, ipAddress, userAgent, false, nil)
-			return nil, errors.New("invalid credentials")
+			return nil, domain.ErrInvalidCredentials
 		}
 	} else {
 		user, err = uc.userRepo.FindByEmail(ctx, request.Email)
 		if err != nil || user == nil {
 			uc.logLoginAttempt(ctx, request.Email, ipAddress, userAgent, false, nil)
-			return nil, errors.New("invalid credentials")
+			return nil, domain.ErrInvalidCredentials
 		}
 
 		if user.LockedUntil != nil && user.LockedUntil.After(time.Now()) {
@@ -124,7 +124,7 @@ func (uc *LoginUseCase) Execute(
 			if uc.lockout.MaxAttempts > 0 && rec.FailedAttempts >= uc.lockout.MaxAttempts {
 				return nil, errors.New("account is locked")
 			}
-			return nil, errors.New("invalid credentials")
+			return nil, domain.ErrInvalidCredentials
 		}
 	}
 

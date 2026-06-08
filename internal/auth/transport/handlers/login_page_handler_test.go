@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/yovannylopez/docsy-main/internal/auth/domain"
 	"github.com/yovannylopez/docsy-main/internal/auth/domain/dtos"
 	"github.com/yovannylopez/docsy-main/internal/auth/mocks"
 	authtest "github.com/yovannylopez/docsy-main/internal/auth/test_utils"
@@ -53,7 +54,7 @@ func TestLoginPageHandler_ShowLogin_ReturnsHTML(t *testing.T) {
 func TestLoginPageHandler_SubmitLogin_InvalidCredentials(t *testing.T) {
 	h, loginSvc := newTestLoginPageHandler(t)
 	loginSvc.On("Login", mock.Anything, mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-		Return((*dtos.LoginResponse)(nil), &domainError{msg: "invalid credentials"})
+		Return((*dtos.LoginResponse)(nil), domain.ErrInvalidCredentials)
 
 	e := newEchoWithRenderer(t)
 	form := url.Values{}
@@ -71,10 +72,6 @@ func TestLoginPageHandler_SubmitLogin_InvalidCredentials(t *testing.T) {
 	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	assert.Contains(t, rec.Body.String(), "Credenciales inválidas")
 }
-
-type domainError struct{ msg string }
-
-func (e *domainError) Error() string { return e.msg }
 
 func TestLoginPageHandler_SubmitLogin_Success(t *testing.T) {
 	h, loginSvc := newTestLoginPageHandler(t)

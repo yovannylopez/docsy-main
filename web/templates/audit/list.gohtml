@@ -1,0 +1,63 @@
+{{define "audit/list"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+<div class="space-y-6 p-2 sm:p-4">
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+
+  <div id="audit-filters" class="bg-card shadow-custom rounded-lg border border-border p-6">
+    <h3 class="text-foreground mb-3 text-lg font-semibold">Filtros de búsqueda</h3>
+    <form
+      method="get"
+      action="/auditoria"
+      hx-get="/auditoria"
+      hx-target="#audit-table"
+      hx-trigger="change delay:300ms from:select, submit"
+      class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <label for="user_id" class="text-foreground mb-1 block text-sm font-medium">ID de usuario</label>
+        <input type="text" id="user_id" name="user_id" value="{{.Filters.UserID}}" placeholder="UUID del usuario"
+          class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label for="action" class="text-foreground mb-1 block text-sm font-medium">Acción</label>
+        <select id="action" name="action" class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+          {{range .ActionOptions}}
+          <option value="{{.Value}}" {{if eq $.Filters.Action .Value}}selected{{end}}>{{.Label}}</option>
+          {{end}}
+        </select>
+      </div>
+      <div>
+        <label for="resource" class="text-foreground mb-1 block text-sm font-medium">Recurso</label>
+        <select id="resource" name="resource" class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+          {{range .ResourceOptions}}
+          <option value="{{.Value}}" {{if eq $.Filters.Resource .Value}}selected{{end}}>{{.Label}}</option>
+          {{end}}
+        </select>
+      </div>
+      <div>
+        <label for="result" class="text-foreground mb-1 block text-sm font-medium">Resultado</label>
+        <select id="result" name="result" class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+          {{range .ResultOptions}}
+          <option value="{{.Value}}" {{if eq $.Filters.Result .Value}}selected{{end}}>{{.Label}}</option>
+          {{end}}
+        </select>
+      </div>
+      <div class="mt-2 flex justify-end gap-2 md:col-span-4">
+        <a href="/auditoria" class="btn btn-secondary rounded-md px-4 py-2 text-sm font-medium">Limpiar filtros</a>
+        <button type="submit" class="btn btn-primary rounded-md px-4 py-2 text-sm font-medium">Buscar</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="audit-table">
+    {{template "partials/audit-table" .}}
+  </div>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}
