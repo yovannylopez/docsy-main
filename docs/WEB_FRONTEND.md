@@ -36,7 +36,8 @@ web/
 │   └── assets/             # Iconos e imágenes
 ├── templates/
 │   ├── layouts/            # base, auth, app
-│   ├── partials/           # alerts, navbar, sidebar, etc.
+│   ├── components/         # modales reutilizables (confirmación, éxito, shell)
+│   ├── partials/           # alerts, form-field, pagination, navbar, sidebar, etc.
 │   ├── auth/               # login, login_result, mfa_unavailable
 │   └── home.gohtml
 └── package.json            # Solo dev: Tailwind CLI
@@ -118,6 +119,24 @@ Las preferencias se persisten en `localStorage` (`docsy-theme-color`, `docsy-the
 Layout compartido: `internal/shared/transport/web/layout_data.go` (`AppLayoutData`).
 
 Ver SDD: [`docs/sdd/009-web-profile-menu.md`](sdd/009-web-profile-menu.md).
+
+## Componentes compartidos (Fase 2 — Iteración A)
+
+Plantillas reutilizables para formularios, tablas y modales (usuarios y auditoría):
+
+| Plantilla | Uso |
+|-----------|-----|
+| `components/confirmation-modal` | Confirmar acciones destructivas (HTMX en botón confirmar) |
+| `components/success-modal` | Resumen post-acción con secciones label/valor |
+| `components/modal-shell` | Modal genérico con tonos `warning`, `danger`, `success`, `info` |
+| `partials/form-field` | Input flotante con estado inválido y toggle de contraseña |
+| `partials/table-pagination` | Paginación offset/limit con URLs prev/next |
+| `partials/alert-success` | Banner inline de éxito |
+
+View models en `internal/shared/transport/web/components_data.go`.  
+Mostrar modales: `openModal('id')` · Cerrar: `closeModal('id')` (`web/static/js/app.js`).
+
+Ver SDD: [`docs/sdd/010-web-users-audit-modals.md`](sdd/010-web-users-audit-modals.md).
 
 ## API REST
 

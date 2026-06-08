@@ -21,7 +21,7 @@ func NewAppLayoutData(title, subtitle, userName, activeRoute string) AppLayoutDa
 		Title:           title,
 		Subtitle:        subtitle,
 		UserName:        userName,
-		AvatarURL:       "/static/assets/images/avatar-default.svg",
+		AvatarURL:       "/static/assets/avatars/avatar-01.png",
 		ActiveRoute:     activeRoute,
 		SidebarExpanded: true,
 		AppVersion:      "1.0.0",

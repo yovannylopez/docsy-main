@@ -1,0 +1,51 @@
+{{define "components/confirmation-modal"}}
+<div
+  id="{{.ModalID}}"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="{{.ModalID}}-title">
+  <div class="bg-card text-foreground rounded-lg shadow-custom max-w-md w-full mx-4 overflow-hidden modal-content border border-border">
+    <div class="px-6 py-4 flex items-center justify-between {{if .HeaderClass}}{{.HeaderClass}}{{else}}bg-primary text-primary-foreground{{end}}">
+      <div class="flex items-center space-x-3">
+        <svg class="h-6 w-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <h3 id="{{.ModalID}}-title" class="text-lg font-semibold">{{.Title}}</h3>
+      </div>
+      <button type="button" onclick="closeModal('{{.ModalID}}')" class="opacity-90 hover:opacity-100 transition-opacity" aria-label="Cerrar">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-6 py-6">
+      <div class="text-center">
+        <svg class="h-16 w-16 mx-auto mb-4 text-primary icon-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <p class="text-muted-foreground text-base leading-relaxed">{{.Message}}</p>
+      </div>
+    </div>
+
+    <div class="bg-muted/30 border-t border-border px-6 py-4 flex justify-end gap-3">
+      <button
+        type="button"
+        onclick="closeModal('{{.ModalID}}')"
+        class="px-5 py-2 rounded-lg text-foreground bg-background border border-border text-sm font-medium hover:bg-card transition-colors">
+        {{if .CancelText}}{{.CancelText}}{{else}}Cancelar{{end}}
+      </button>
+      <button
+        type="button"
+        class="px-5 py-2 rounded-lg text-primary-foreground text-sm font-medium transition-colors {{if .ConfirmButtonClass}}{{.ConfirmButtonClass}}{{else}}bg-primary hover:bg-primary/90{{end}}"
+        {{if .ConfirmURL}}hx-{{if .ConfirmMethod}}{{.ConfirmMethod}}{{else}}post{{end}}="{{.ConfirmURL}}"{{end}}
+        {{if .ConfirmHXTarget}}hx-target="{{.ConfirmHXTarget}}"{{end}}
+        {{if .ConfirmHXSwap}}hx-swap="{{.ConfirmHXSwap}}"{{end}}
+        hx-on::after-request="closeModal('{{.ModalID}}')">
+        {{if .ConfirmText}}{{.ConfirmText}}{{else}}Confirmar{{end}}
+      </button>
+    </div>
+  </div>
+</div>
+{{end}}

@@ -240,7 +240,7 @@ Los formularios incluyen comentarios `<!-- HTMX: hx-post="..." -->` donde aplica
 ## Assets pendientes
 
 - **`auth-screens.png`**: referenciado en Angular pero **no existe en el repo**. Ver `assets/images/README-auth-screens.md`.
-- Avatar: se usa `avatar-default.svg` como placeholder (Angular usa `avt-02.png`).
+- Avatar: se usa `avatar-01.png` como placeholder (Angular usa `avt-02.png`).
 
 ## Páginas auth opcionales (solo en Angular)
 
