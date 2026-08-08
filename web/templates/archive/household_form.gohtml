@@ -1,0 +1,36 @@
+{{define "archive/household_form"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+<div class="w-full max-w-[98%] mx-auto space-y-6">
+  {{template "partials/alert-success-message" .Success}}
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+
+  <form method="post" action="/archivo/hogares/nuevo" class="space-y-6">
+    <div class="bg-card shadow-custom rounded-lg border border-border p-6">
+      <h3 class="text-foreground border-border mb-6 border-b pb-4 text-lg font-semibold">Archivo del hogar</h3>
+      <p class="text-muted-foreground mb-4 text-sm">
+        Crea un espacio compartido para documentos familiares. Podrás invitar miembros después de crearlo.
+      </p>
+      <div>
+        <label for="name" class="text-foreground mb-1 block text-sm font-medium">Nombre <span class="text-destructive">*</span></label>
+        <input type="text" id="name" name="name" value="{{.Form.Name}}" required maxlength="255"
+          placeholder="Ej. Archivo del hogar"
+          class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+      </div>
+      {{if .Form.GeneralError}}<p class="text-destructive mt-4 text-sm">{{.Form.GeneralError}}</p>{{end}}
+    </div>
+
+    <div class="border-border flex flex-col gap-3 border-t pt-6 sm:flex-row sm:justify-between">
+      <a href="/archivo" class="btn btn-secondary inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium">Volver</a>
+      <button type="submit" class="btn btn-primary rounded-md px-4 py-2 text-sm font-medium">Crear hogar</button>
+    </div>
+  </form>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

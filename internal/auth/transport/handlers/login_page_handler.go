@@ -134,11 +134,7 @@ func (h *LoginPageHandler) ShowSettings(c echo.Context) error {
 }
 
 func buildAppLayoutData(c echo.Context, title, subtitle, activeRoute string) weblayout.AppLayoutData {
-	userName := ""
-	if user := userFromContext(c); user != nil {
-		userName = displayName(user)
-	}
-	return weblayout.NewAppLayoutData(title, subtitle, userName, activeRoute)
+	return weblayout.AppLayoutFromEcho(c, title, subtitle, activeRoute)
 }
 
 // SubmitLogout closes the session and redirects to login.

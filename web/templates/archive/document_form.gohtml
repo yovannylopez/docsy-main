@@ -1,0 +1,210 @@
+{{define "archive/document_form"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+<div class="w-full max-w-[98%] mx-auto space-y-6">
+  {{template "partials/alert-success-message" .Success}}
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+
+  <form id="doc-meta-form" method="post"
+    action="{{if .IsEdit}}/archivo/documentos/{{.Form.ID}}/editar{{else}}/archivo/documentos/nuevo{{end}}"
+    {{if not .IsEdit}}enctype="multipart/form-data"{{end}}
+    class="space-y-6">
+    {{if .WorkspaceID}}<input type="hidden" name="workspace_id" value="{{.WorkspaceID}}" />{{end}}
+    <div class="bg-card shadow-custom rounded-lg border border-border p-6">
+      <div class="section-heading">
+        <div class="section-heading-icon" aria-hidden="true">{{template "icons/glyph-document" .}}</div>
+        <div class="section-heading-text">
+          <h3>Datos del documento</h3>
+          <p>Metadatos para organizar y encontrar el archivo</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="md:col-span-2">
+          <label for="title" class="text-foreground mb-1 block text-sm font-medium">Título <span class="text-destructive">*</span></label>
+          <input type="text" id="title" name="title" value="{{.Form.Title}}" required maxlength="255"
+            placeholder="Ej. Predial 2026 — predio centro"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="category_code" class="text-foreground mb-1 block text-sm font-medium">Categoría <span class="text-destructive">*</span></label>
+          <select id="category_code" name="category_code" required class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+            {{range .Categories}}
+            <option value="{{.Code}}" {{if eq $.Form.CategoryCode .Code}}selected{{end}}>{{.LabelES}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div>
+          <label for="issuer" class="text-foreground mb-1 block text-sm font-medium">Emisor</label>
+          <input type="text" id="issuer" name="issuer" value="{{.Form.Issuer}}" maxlength="255"
+            placeholder="Ej. SERVICIUDAD, Municipio, TecnoTienda"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="reference_number" class="text-foreground mb-1 block text-sm font-medium">Referencia / Nº</label>
+          <input type="text" id="reference_number" name="reference_number" value="{{.Form.ReferenceNumber}}" maxlength="128"
+            placeholder="Factura, cuenta, predio, recibo…"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="document_date" class="text-foreground mb-1 block text-sm font-medium">Fecha del documento</label>
+          <input type="date" id="document_date" name="document_date" value="{{.Form.DocumentDate}}"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="due_date" class="text-foreground mb-1 block text-sm font-medium">Fecha de vencimiento</label>
+          <input type="date" id="due_date" name="due_date" value="{{.Form.DueDate}}"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="amount" class="text-foreground mb-1 block text-sm font-medium">Monto (pesos)</label>
+          <input type="text" id="amount" name="amount" value="{{.Form.Amount}}" inputmode="decimal"
+            placeholder="Ej. 125000 o 125000.50"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div>
+          <label for="currency" class="text-foreground mb-1 block text-sm font-medium">Moneda</label>
+          <input type="text" id="currency" name="currency" value="{{.Form.Currency}}" maxlength="3"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+        </div>
+        <div class="md:col-span-2">
+          <label for="notes" class="text-foreground mb-1 block text-sm font-medium">Notas</label>
+          <textarea id="notes" name="notes" rows="3" maxlength="2000"
+            placeholder="CUFE, periodo, conceptos adicionales…"
+            class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm">{{.Form.Notes}}</textarea>
+        </div>
+      </div>
+      {{if .Form.GeneralError}}<p class="text-destructive mt-4 text-sm">{{.Form.GeneralError}}</p>{{end}}
+    </div>
+
+    {{if not .IsEdit}}
+    <div class="bg-card shadow-custom rounded-lg border border-border p-6 space-y-4">
+      <div class="section-heading">
+        <div class="section-heading-icon section-heading-icon-success" aria-hidden="true">{{template "icons/glyph-folder" .}}</div>
+        <div class="section-heading-text">
+          <h3>Archivo adjunto <span class="text-destructive">*</span></h3>
+          <p>Obligatorio para crear el documento</p>
+        </div>
+      </div>
+      <div class="border-border bg-muted/10 rounded-xl border-2 border-dashed p-6">
+        <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+          <div class="bg-primary/10 text-primary upload-zone-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-full">
+            {{template "icons/glyph-upload" .}}
+          </div>
+          <div class="min-w-0 flex-1">
+            <label for="file" class="text-foreground text-sm font-semibold">Selecciona el archivo</label>
+            <p class="text-muted-foreground text-xs">PDF, JPG, PNG, TIFF, DOC, DOCX, XLS, XLSX (también WebP/GIF)</p>
+            <input type="file" id="file" name="file" required
+              accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/tiff,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              class="border-border bg-background text-foreground mt-3 w-full rounded-md border px-3 py-2 text-sm" />
+          </div>
+        </div>
+      </div>
+    </div>
+    {{end}}
+  </form>
+
+  {{if .IsEdit}}
+  <div class="bg-card shadow-custom rounded-lg border border-border p-6 space-y-4">
+    <div class="section-heading">
+      <div class="section-heading-icon section-heading-icon-success" aria-hidden="true">{{template "icons/glyph-folder" .}}</div>
+      <div class="section-heading-text">
+        <h3>Documentos adjuntos</h3>
+        <p>Debe conservar al menos un archivo · vista previa cuando aplique</p>
+      </div>
+    </div>
+
+    {{if .Files}}
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {{range .Files}}
+      <div class="bg-muted/30 hover:bg-muted/50 border-border flex items-start gap-4 rounded-xl border p-4 transition-all hover:shadow-sm">
+        <div class="border-border flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border">
+          <span class="flex h-full w-full items-center justify-center text-[0.65rem] font-bold uppercase tracking-wide text-white"
+            style="background-color: {{.BadgeColor}};">{{.Extension}}</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h4 class="text-foreground truncate text-sm font-medium" title="{{.OriginalName}}">{{.OriginalName}}</h4>
+          <p class="text-muted-foreground mt-1 text-xs">
+            <span>{{.SizeDisplay}}</span>
+            <span class="mx-1">·</span>
+            <span>{{.UploadedAt}}</span>
+          </p>
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            {{if .IsPreviewable}}
+            <button
+              type="button"
+              class="text-primary hover:opacity-80 inline-flex items-center gap-1.5 text-sm font-medium"
+              data-preview-url="{{.PreviewURL}}"
+              data-filename="{{.OriginalName}}"
+              data-kind="{{.PreviewKind}}"
+              onclick="openDocumentPreview(this.dataset.previewUrl, this.dataset.filename, this.dataset.kind)"
+              title="Ver aquí">
+              {{template "icons/sm-eye" .}}
+              Ver aquí
+            </button>
+            {{end}}
+            <a href="{{.DownloadURL}}" class="text-primary hover:opacity-80 inline-flex items-center gap-1.5 text-sm font-medium" title="Descargar">
+              {{template "icons/sm-download" .}}
+              Descargar
+            </a>
+            {{if gt (len $.Files) 1}}
+            <form method="post" action="{{.DeleteURL}}" onsubmit="return confirm('¿Eliminar este archivo?');" class="inline">
+              {{if $.WorkspaceID}}<input type="hidden" name="workspace_id" value="{{$.WorkspaceID}}" />{{end}}
+              <button type="submit" class="text-destructive hover:opacity-80 text-sm font-medium" title="Eliminar">
+                Eliminar
+              </button>
+            </form>
+            {{end}}
+          </div>
+        </div>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="border-border bg-muted/20 rounded-xl border-2 border-dashed px-4 py-12 text-center">
+      <div class="empty-state-icon">{{template "icons/glyph-folder" .}}</div>
+      <p class="text-foreground text-sm font-medium">No hay documentos adjuntos</p>
+      <p class="text-muted-foreground mt-1 text-sm">Adjunta al menos un archivo para este documento</p>
+    </div>
+    {{end}}
+
+    <form method="post" action="/archivo/documentos/{{.Form.ID}}/archivos" enctype="multipart/form-data"
+      class="border-border bg-muted/10 hover:border-primary/40 rounded-xl border-2 border-dashed p-6 transition-colors">
+      {{if .WorkspaceID}}<input type="hidden" name="workspace_id" value="{{.WorkspaceID}}" />{{end}}
+      <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+        <div class="bg-primary/10 text-primary upload-zone-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-full">
+          {{template "icons/glyph-upload" .}}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-foreground text-sm font-semibold">Cargar otro archivo</p>
+          <p class="text-muted-foreground text-xs">PDF, JPG, PNG, TIFF, DOC, DOCX, XLS, XLSX (también WebP/GIF)</p>
+          <input type="file" id="file" name="file" required
+            accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/tiff,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            class="border-border bg-background text-foreground mt-3 w-full rounded-md border px-3 py-2 text-sm" />
+        </div>
+        <button type="submit" class="btn btn-primary shrink-0 rounded-md px-4 py-2 text-sm font-medium">
+          Subir
+        </button>
+      </div>
+    </form>
+  </div>
+  {{template "components/document-preview-modal" .}}
+  {{end}}
+
+  <div class="border-border flex flex-col gap-3 border-t pt-6 sm:flex-row sm:justify-between">
+    <a href="/archivo/documentos{{if .WorkspaceID}}?workspace_id={{.WorkspaceID}}{{end}}" class="btn btn-secondary inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium">Volver al listado</a>
+    <div class="flex gap-3">
+      <a href="/archivo/documentos{{if .WorkspaceID}}?workspace_id={{.WorkspaceID}}{{end}}" class="btn btn-secondary rounded-md px-4 py-2 text-sm font-medium">Cancelar</a>
+      <button type="submit" form="doc-meta-form" class="btn btn-primary rounded-md px-4 py-2 text-sm font-medium">
+        {{if .IsEdit}}Guardar cambios{{else}}Crear documento{{end}}
+      </button>
+    </div>
+  </div>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

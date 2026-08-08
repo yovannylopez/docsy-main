@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 
+	archiveContainer "github.com/yovannylopez/docsy-main/internal/archive/infrastructure/container"
 	authpolicies "github.com/yovannylopez/docsy-main/internal/auth/domain/policies"
 	authContainer "github.com/yovannylopez/docsy-main/internal/auth/infrastructure/container"
 	"github.com/yovannylopez/docsy-main/internal/auth/transport/handlers"
@@ -22,8 +23,9 @@ import (
 // To add a new module: create <ModuleName>Container here and wire in NewContainer.
 type Container struct {
 	// Base modules (always present)
-	AuthContainer  *authContainer.AuthContainer
-	UsersContainer *usersContainer.UsersContainer
+	AuthContainer    *authContainer.AuthContainer
+	UsersContainer   *usersContainer.UsersContainer
+	ArchiveContainer *archiveContainer.ArchiveContainer
 
 	// Database
 	DB                    *sqlx.DB
@@ -79,6 +81,12 @@ func NewContainer(cfg *config.CoreConfig) (*Container, error) {
 		authC.GetPasswordHasher(),
 		authC.GetAuditRepository(),
 	)
+	archiveC, err := archiveContainer.NewArchiveContainer(
+		db, cfg.Storage, authC.UserRepository, authC.GetAuditRepository(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create archive container: %w", err)
+	}
 
 	healthHandler := sharedHandlers.NewHealthHandler(db, cbWrapper)
 	userHandler := usersC.GetUsersHandler()
@@ -86,6 +94,7 @@ func NewContainer(cfg *config.CoreConfig) (*Container, error) {
 	return &Container{
 		AuthContainer:         authC,
 		UsersContainer:        usersC,
+		ArchiveContainer:      archiveC,
 		DB:                    db,
 		CircuitBreakerWrapper: cbWrapper,
 		HealthHandler:         healthHandler,
@@ -137,5 +146,8 @@ func (c *Container) CreateLoginPageHandler() *handlers.LoginPageHandler {
 
 // CreateAuditPageHandler returns the server-rendered audit page handler.
 func (c *Container) CreateAuditPageHandler() *handlers.AuditPageHandler {
-	return handlers.NewAuditPageHandler(c.AuthContainer.ListAuditLogsUseCase)
+	return handlers.NewAuditPageHandler(
+		c.AuthContainer.ListAuditLogsUseCase,
+		c.AuthContainer.UserRepository,
+	)
 }

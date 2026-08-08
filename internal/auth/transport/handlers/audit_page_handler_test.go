@@ -21,7 +21,8 @@ import (
 
 func TestAuditPageHandler_List_ReturnsHTML(t *testing.T) {
 	mockUC := mocks.NewListAuditLogsUseCase(t)
-	handler := NewAuditPageHandler(mockUC)
+	userRepo := mocks.NewUserRepository(t)
+	handler := NewAuditPageHandler(mockUC, userRepo)
 
 	renderer, err := templates.NewRenderer()
 	require.NoError(t, err)
@@ -33,23 +34,33 @@ func TestAuditPageHandler_List_ReturnsHTML(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.Set("user", &entities.User{ID: uuid.NewString(), Email: "admin@test.com", PermissionNames: []string{"audit.read"}})
 
+	userID := uuid.NewString()
 	mockLogs := []entities.AuditLog{
-		authtest.TransportAuditLogRow(uuid.NewString(), domain.AuditActionCreate, domain.AuditResultSuccess, authtest.StringPtr("users"), nil),
+		authtest.TransportAuditLogRow(uuid.NewString(), domain.AuditActionCreate, domain.AuditResultSuccess, authtest.StringPtr("users"), &userID),
 	}
 	mockUC.On("Execute", mock.Anything, mock.MatchedBy(func(f *dtos.AuditLogFilters) bool {
 		return f.Limit == 10 && f.Offset == 0
 	})).Return(mockLogs, 1, nil)
+	userRepo.On("FindByID", mock.Anything, userID).Return(&entities.User{
+		ID:        userID,
+		Email:     "ana@test.com",
+		FirstName: "Ana",
+		LastName:  "García",
+	}, nil)
 
 	err = handler.List(c)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "Logs de auditoría")
+	assert.Contains(t, rec.Body.String(), "Ana García")
+	assert.NotContains(t, rec.Body.String(), userID)
 	mockUC.AssertExpectations(t)
+	userRepo.AssertExpectations(t)
 }
 
 func TestAuditPageHandler_List_ReturnsTablePartialForHTMX(t *testing.T) {
 	mockUC := mocks.NewListAuditLogsUseCase(t)
-	handler := NewAuditPageHandler(mockUC)
+	handler := NewAuditPageHandler(mockUC, mocks.NewUserRepository(t))
 
 	renderer, err := templates.NewRenderer()
 	require.NoError(t, err)

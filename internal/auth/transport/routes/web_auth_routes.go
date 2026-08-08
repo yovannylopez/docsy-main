@@ -12,6 +12,7 @@ type WebAuthRoutes struct {
 	loginPageHandler *handlers.LoginPageHandler
 	webAuthMW        *authmiddleware.WebAuthMiddleware
 	authRateLimit    echo.MiddlewareFunc
+	extraMW          []echo.MiddlewareFunc
 }
 
 // NewWebAuthRoutes creates a WebAuthRoutes instance.
@@ -19,11 +20,13 @@ func NewWebAuthRoutes(
 	loginPageHandler *handlers.LoginPageHandler,
 	webAuthMW *authmiddleware.WebAuthMiddleware,
 	authRateLimit echo.MiddlewareFunc,
+	extraMW ...echo.MiddlewareFunc,
 ) *WebAuthRoutes {
 	return &WebAuthRoutes{
 		loginPageHandler: loginPageHandler,
 		webAuthMW:        webAuthMW,
 		authRateLimit:    authRateLimit,
+		extraMW:          extraMW,
 	}
 }
 
@@ -39,6 +42,9 @@ func (wr *WebAuthRoutes) Setup(e *echo.Echo) {
 func (wr *WebAuthRoutes) SetupProtected(e *echo.Echo) {
 	protected := e.Group("")
 	protected.Use(wr.webAuthMW.RequireAuth())
+	for _, mw := range wr.extraMW {
+		protected.Use(mw)
+	}
 	protected.GET("/", wr.loginPageHandler.ShowHome)
 	protected.GET("/perfil", wr.loginPageHandler.ShowProfile)
 	protected.GET("/configuracion", wr.loginPageHandler.ShowSettings)

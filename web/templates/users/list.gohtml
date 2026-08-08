@@ -11,7 +11,13 @@
 
   <div class="bg-card shadow-custom rounded-lg border border-border p-4">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h3 class="text-foreground text-lg font-semibold">Usuarios del sistema</h3>
+      <div class="section-heading mb-0 border-0 pb-0">
+        <div class="section-heading-icon" aria-hidden="true">{{template "icons/glyph-users" .}}</div>
+        <div class="section-heading-text">
+          <h3>Usuarios del sistema</h3>
+          <p>Mostrando {{len .Users}} de {{.Total}} usuarios</p>
+        </div>
+      </div>
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <form method="get" action="/usuarios" class="flex gap-2">
           <input
@@ -27,7 +33,6 @@
         </a>
       </div>
     </div>
-    <p class="text-muted-foreground mt-2 text-sm">Mostrando {{len .Users}} de {{.Total}} usuarios</p>
   </div>
 
   <div id="users-table">

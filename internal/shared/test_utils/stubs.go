@@ -145,6 +145,7 @@ func newTestConfigs() TestConfigs {
 	storageConfig := sharedConfig.StorageConfig{
 		DocumentPath: "/test/documents",
 		MaxFileSize:  DefaultMaxFileSize,
+		QuotaBytes:   int64(constants.DefaultStorageQuotaBytes),
 	}
 
 	return TestConfigs{

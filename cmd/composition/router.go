@@ -11,6 +11,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	archivemw "github.com/yovannylopez/docsy-main/internal/archive/transport/middleware"
+	archiveRoutes "github.com/yovannylopez/docsy-main/internal/archive/transport/routes"
 	authmiddleware "github.com/yovannylopez/docsy-main/internal/auth/transport/middleware"
 	authRoutes "github.com/yovannylopez/docsy-main/internal/auth/transport/routes"
 	coreMiddleware "github.com/yovannylopez/docsy-main/internal/shared/transport/middleware"
@@ -25,19 +27,21 @@ const (
 // Router contains the routes of the application.
 // To add a new module, register its routes in SetupRoutes.
 type Router struct {
-	echo           *echo.Echo
-	container      *Container
-	authRoutes     *authRoutes.AuthRoutes
-	webAuthRoutes  *authRoutes.WebAuthRoutes
-	webAuditRoutes *authRoutes.WebAuditRoutes
-	webUsersRoutes *usersRoutes.WebUsersRoutes
-	auditRoutes    *authRoutes.AuditRoutes
-	healthRoutes   *sharedRoutes.HealthRoutes
+	echo             *echo.Echo
+	container        *Container
+	authRoutes       *authRoutes.AuthRoutes
+	webAuthRoutes    *authRoutes.WebAuthRoutes
+	webAuditRoutes   *authRoutes.WebAuditRoutes
+	webUsersRoutes   *usersRoutes.WebUsersRoutes
+	webArchiveRoutes *archiveRoutes.WebArchiveRoutes
+	auditRoutes      *authRoutes.AuditRoutes
+	healthRoutes     *sharedRoutes.HealthRoutes
 }
 
 // NewRouter creates a new instance of Router with the dependencies of the base modules.
 func NewRouter(e *echo.Echo, container *Container) *Router {
 	webAuthMW := authmiddleware.NewWebAuthMiddleware(container.AuthContainer.AuthUseCase)
+	sidebarStorageMW := archivemw.InjectSidebarStorage(container.ArchiveContainer.GetStorageUsageUC())
 	return &Router{
 		echo:      e,
 		container: container,
@@ -49,14 +53,22 @@ func NewRouter(e *echo.Echo, container *Container) *Router {
 			container.CreateLoginPageHandler(),
 			webAuthMW,
 			container.AuthRateLimit,
+			sidebarStorageMW,
 		),
 		webUsersRoutes: usersRoutes.NewWebUsersRoutes(
 			container.UsersContainer.GetUsersPageHandler(),
 			webAuthMW,
+			sidebarStorageMW,
 		),
 		webAuditRoutes: authRoutes.NewWebAuditRoutes(
 			container.CreateAuditPageHandler(),
 			webAuthMW,
+			sidebarStorageMW,
+		),
+		webArchiveRoutes: archiveRoutes.NewWebArchiveRoutes(
+			container.ArchiveContainer.GetArchivePageHandler(),
+			webAuthMW,
+			sidebarStorageMW,
 		),
 		auditRoutes:  authRoutes.NewAuditRoutes(container.AuthContainer.GetAuditHandler()),
 		healthRoutes: sharedRoutes.NewHealthRoutes(container.CreateHealthHandler()),
@@ -77,6 +89,7 @@ func (r *Router) SetupRoutes() {
 	r.webAuthRoutes.SetupProtected(r.echo)
 	r.webUsersRoutes.Setup(r.echo)
 	r.webAuditRoutes.Setup(r.echo)
+	r.webArchiveRoutes.Setup(r.echo)
 
 	api := r.echo.Group("/api")
 
@@ -102,6 +115,7 @@ func (r *Router) SetupRoutes() {
 
 	usersRoutes.RegisterUserRoutes(protected, r.container.UsersContainer.GetUsersHandler())
 	r.auditRoutes.Setup(protected)
+	archiveRoutes.RegisterArchiveRoutes(protected, r.container.ArchiveContainer.GetArchiveHandler())
 
 	// ─── Register here the routes of your business modules ──────────────────
 	// Example when adding the "products" module with scaffold_module.sh:

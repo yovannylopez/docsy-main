@@ -65,9 +65,16 @@ cp -r "$TEMPLATE_DIR" "$TARGET_DIR"
 # Orden importa: primero el path completo del módulo, luego PascalCase, luego snake
 
 find "$TARGET_DIR" -type f \( -name "*.go" -o -name "*.yaml" -o -name "*.md" \) | while IFS= read -r file; do
-  sed -i '' "s|TEMPLATE_MODULE|${MODULE_SNAKE}|g" "$file"
-  sed -i '' "s|Template|${MODULE_PASCAL}|g" "$file"
-  sed -i '' "s|template|${MODULE_SNAKE}|g" "$file"
+  # GNU sed (Linux) and BSD sed (macOS)
+  if sed --version >/dev/null 2>&1; then
+    sed -i "s|TEMPLATE_MODULE|${MODULE_SNAKE}|g" "$file"
+    sed -i "s|Template|${MODULE_PASCAL}|g" "$file"
+    sed -i "s|template|${MODULE_SNAKE}|g" "$file"
+  else
+    sed -i '' "s|TEMPLATE_MODULE|${MODULE_SNAKE}|g" "$file"
+    sed -i '' "s|Template|${MODULE_PASCAL}|g" "$file"
+    sed -i '' "s|template|${MODULE_SNAKE}|g" "$file"
+  fi
 done
 
 # ─── Renombrar archivos .go (template_* → <module>_*) ─────────────────────────

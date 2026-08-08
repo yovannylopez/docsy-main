@@ -150,6 +150,41 @@ Ver SDD: [`docs/sdd/010-web-users-audit-modals.md`](sdd/010-web-users-audit-moda
 
 Dual transport: mismos use cases que `/api/v1/users` y `GET /api/v1/auditoria`.
 
+## Archivo personal (SDD 011 — Iteraciones A–C)
+
+| Ruta | Permiso | Handler |
+|------|---------|---------|
+| `GET /archivo` | `archive.read` | `ArchivePageHandler.ShowArchive` (lista workspaces) |
+| `GET/POST /archivo/hogares/nuevo` | `archive.manage` | crear hogar compartido |
+| `GET /archivo/hogares/:id/miembros` | `archive.read` | listado de miembros |
+| `POST /archivo/hogares/:id/miembros` | `archive.manage` | invitar miembro por email |
+| `POST /archivo/hogares/:id/miembros/:userId/eliminar` | `archive.manage` | eliminar miembro |
+| `GET /archivo/documentos` | `archive.read` | listado con filtros `q`, `category`, `status`, `workspace_id` |
+| `GET/POST /archivo/documentos/nuevo` | `archive.write` | crear documento con adjunto obligatorio (multipart `file`, `workspace_id` opcional) |
+| `GET/POST /archivo/documentos/:id/editar` | `archive.write` | formulario editar metadatos (`workspace_id` en query/form) |
+| `POST /archivo/documentos/:id/archivos` | `archive.write` | subir adjunto (PDF, imagen, Word, Excel; multipart `file`) |
+| `GET /archivo/documentos/:id/archivos/:fileId` | `archive.read` | descargar adjunto |
+| `POST /archivo/documentos/:id/archivos/:fileId/eliminar` | `archive.write` | eliminar adjunto |
+| `GET /api/v1/archive/workspaces/me` | `archive.read` | workspace personal |
+| `GET /api/v1/archive/workspaces` | `archive.read` | listar workspaces del usuario |
+| `POST /api/v1/archive/workspaces/household` | `archive.manage` | crear hogar |
+| `GET /api/v1/archive/workspaces/:id/members` | `archive.read` | listar miembros |
+| `POST /api/v1/archive/workspaces/:id/members` | `archive.manage` | invitar miembro |
+| `PATCH /api/v1/archive/workspaces/:id/members/:userId` | `archive.manage` | cambiar rol |
+| `DELETE /api/v1/archive/workspaces/:id/members/:userId` | `archive.manage` | eliminar miembro |
+| `GET /api/v1/archive/categories` | `archive.read` | categorías seed |
+| `GET/POST /api/v1/archive/documents` | `archive.read` / `archive.write` | listar / crear (`workspace_id` opcional) |
+| `GET/PATCH /api/v1/archive/documents/:id` | `archive.read` / `archive.write` | detalle / actualizar |
+| `POST /api/v1/archive/documents/:id/archive` | `archive.write` | soft-archive |
+| `GET/POST /api/v1/archive/documents/:id/files` | `archive.read` / `archive.write` | listar / subir adjuntos |
+| `GET/DELETE /api/v1/archive/documents/:id/files/:fileId` | `archive.read` / `archive.write` | descargar / eliminar |
+
+Storage local: `DOCUMENT_PATH` (default `./storage/documents`), límite por archivo `MAX_FILE_SIZE` (default 10 MB), cuota blanda del sidebar `STORAGE_QUOTA_BYTES` (default 10 GiB; aún no se aplica en upload). Tipos: PDF, JPG/JPEG, PNG, TIFF, WebP, GIF, DOC/DOCX, XLS/XLSX.
+
+Bounded context: `internal/archive/`. Ver [`docs/sdd/011-archive-personal-family.md`](sdd/011-archive-personal-family.md).
+
+Las escrituras del archivo (documentos, adjuntos, hogares y miembros) quedan en `audit_logs` y se listan en `GET /auditoria` con acciones `archive.*`.
+
 ## API REST
 
 La API JSON existente (`POST /api/v1/auth/login`, etc.) **no se modifica**. Ambos transports comparten el mismo `LoginUseCase`.

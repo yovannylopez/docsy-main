@@ -1,0 +1,42 @@
+{{define "components/document-preview-modal"}}
+<div
+  id="document-preview-modal"
+  class="doc-preview-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="document-preview-title"
+  onclick="if (event.target === this) closeDocumentPreview()">
+  <div class="bg-card text-foreground modal-content mx-4 overflow-hidden rounded-lg border border-border shadow-custom">
+    <div class="bg-primary flex items-center justify-between px-5 py-3 text-white">
+      <div class="min-w-0 flex-1 pr-3">
+        <h3 id="document-preview-title" class="truncate text-base font-semibold">Vista previa</h3>
+        <p id="document-preview-filename" class="truncate text-xs text-white/80"></p>
+      </div>
+      <div class="flex shrink-0 items-center gap-2">
+        <a
+          id="document-preview-open"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25">
+          Abrir
+        </a>
+        <button type="button" onclick="closeDocumentPreview()" class="rounded-md p-1.5 hover:bg-white/15" aria-label="Cerrar">
+          <svg width="20" height="20" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="bg-muted/20 doc-preview-body p-4">
+      <div id="document-preview-loading" class="doc-preview-loading">Cargando vista previa…</div>
+      <iframe id="document-preview-iframe" class="doc-preview-frame" hidden title="Vista previa del documento"></iframe>
+      <embed id="document-preview-embed" class="doc-preview-embed" hidden type="application/pdf" />
+      <img id="document-preview-image" class="doc-preview-image" hidden alt="Vista previa" />
+      <p id="document-preview-unsupported" class="text-muted-foreground p-6 text-center text-sm" hidden>
+        No se pudo mostrar la vista previa. Usa «Abrir» o «Descargar».
+      </p>
+    </div>
+  </div>
+</div>
+{{end}}

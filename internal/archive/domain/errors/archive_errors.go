@@ -1,0 +1,34 @@
+package errors
+
+import "errors"
+
+// Domain errors for the archive module.
+var (
+	ErrUserIDRequired            = errors.New("user id is required")
+	ErrWorkspaceNotFound         = errors.New("workspace not found")
+	ErrNotWorkspaceMember        = errors.New("user is not a member of the workspace")
+	ErrInvalidWorkspaceType      = errors.New("invalid workspace type")
+	ErrDocumentNotFound          = errors.New("document not found")
+	ErrTitleRequired             = errors.New("title is required")
+	ErrCategoryRequired          = errors.New("category is required")
+	ErrInvalidCategory           = errors.New("invalid document category")
+	ErrDocumentIDRequired        = errors.New("document id is required")
+	ErrFileIDRequired            = errors.New("file id is required")
+	ErrFileNotFound              = errors.New("document file not found")
+	ErrFileRequired              = errors.New("file is required")
+	ErrFileTooLarge              = errors.New("file exceeds maximum allowed size")
+	ErrInvalidContentType        = errors.New("file type is not allowed")
+	ErrTooManyFiles              = errors.New("document has reached the maximum number of attachments")
+	ErrCannotDeleteLastFile      = errors.New("document must keep at least one attachment")
+	ErrWorkspaceNameRequired     = errors.New("workspace name is required")
+	ErrWorkspaceIDRequired       = errors.New("workspace id is required")
+	ErrEmailRequired             = errors.New("email is required")
+	ErrInvalidMemberRole         = errors.New("invalid member role")
+	ErrCannotModifyOwner         = errors.New("cannot modify the workspace owner")
+	ErrCannotInviteSelf          = errors.New("cannot invite yourself")
+	ErrAlreadyMember             = errors.New("user is already a workspace member")
+	ErrInviteeNotFound           = errors.New("no user found with that email")
+	ErrInsufficientWorkspaceRole = errors.New("insufficient role in this workspace")
+	ErrNotHouseholdWorkspace     = errors.New("operation only allowed on household workspaces")
+	ErrHouseholdOnlyInvite       = errors.New("members can only be invited to household workspaces")
+)

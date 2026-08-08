@@ -13,6 +13,7 @@ type AppLayoutData struct {
 	AppVersion      string
 	Year            int
 	ThemeClass      string
+	Storage         SidebarStorageData
 }
 
 // NewAppLayoutData builds layout defaults for app pages.

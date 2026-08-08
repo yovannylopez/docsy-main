@@ -54,6 +54,7 @@ func NewApplication(cfg *config.CoreConfig) (*Application, error) {
 	openapiGen.AddTag("authentication", "Authentication operations")
 	openapiGen.AddTag("mfa", "Multi-Factor Authentication (TOTP)")
 	openapiGen.AddTag("users", "Users operations")
+	openapiGen.AddTag("archive", "Personal archive (documents and workspaces)")
 	// Add here the OpenAPI tags of your business modules:
 	// openapiGen.AddTag("products", "Product management")
 

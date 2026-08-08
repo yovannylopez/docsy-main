@@ -1,0 +1,56 @@
+{{define "archive/home"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+{{if .Error}}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 dark:bg-red-950/30 dark:border-red-800">
+  <p class="text-sm text-red-700 dark:text-red-300">{{.Error}}</p>
+</div>
+{{end}}
+
+<div class="space-y-6">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-muted-foreground text-sm">Selecciona un archivo para ver documentos o administra tu hogar compartido.</p>
+    <a href="/archivo/hogares/nuevo" class="btn btn-primary inline-flex rounded-md px-4 py-2 text-sm font-medium">
+      Crear hogar
+    </a>
+  </div>
+
+  {{if .Workspaces}}
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    {{range .Workspaces}}
+    <div class="bg-card rounded-lg border border-border p-6 space-y-4">
+      <div>
+        <p class="text-muted-foreground text-sm">{{.TypeLabel}}</p>
+        <h2 class="text-foreground text-xl font-semibold">{{.Name}}</h2>
+      </div>
+      <dl class="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt class="text-muted-foreground">Tu rol</dt>
+          <dd class="text-foreground font-medium">{{.MemberRole}}</dd>
+        </div>
+      </dl>
+      <div class="flex flex-wrap gap-2">
+        <a href="{{.DocsURL}}" class="btn btn-primary inline-flex rounded-md px-4 py-2 text-sm font-medium">
+          Ver documentos
+        </a>
+        {{if .ShowMembers}}
+        <a href="{{.MembersURL}}" class="btn btn-secondary inline-flex rounded-md px-4 py-2 text-sm font-medium">
+          Gestionar miembros
+        </a>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="bg-card rounded-lg border border-border p-8">
+    <p class="text-muted-foreground text-sm">No hay archivos disponibles.</p>
+  </div>
+  {{end}}
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

@@ -42,7 +42,11 @@ func DisplayUserName(user *authentities.User) string {
 
 // AppLayoutFromEcho builds layout data using the authenticated user from context.
 func AppLayoutFromEcho(c echo.Context, title, subtitle, activeRoute string) AppLayoutData {
-	return NewAppLayoutData(title, subtitle, DisplayUserName(UserFromEchoContext(c)), activeRoute)
+	data := NewAppLayoutData(title, subtitle, DisplayUserName(UserFromEchoContext(c)), activeRoute)
+	if v, ok := c.Get(ContextKeySidebarStorage).(SidebarStorageData); ok {
+		data.Storage = v
+	}
+	return data
 }
 
 // IsHTMXRequest reports whether the request was made by HTMX.

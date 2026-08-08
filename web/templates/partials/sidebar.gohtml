@@ -29,6 +29,12 @@
           </a>
         </li>
         <li>
+          <a href="/archivo" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2 {{if hasPrefix .ActiveRoute "/archivo"}}text-primary{{end}}">
+            <img src="{{assetURL "/assets/icons/heroicons/outline/folder.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
+            <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Mi archivo</span>
+          </a>
+        </li>
+        <li>
           <a href="/usuarios" class="text-muted-foreground hover:text-foreground group relative flex grow items-center gap-4 rounded-lg px-2 py-2 {{if hasPrefix .ActiveRoute "/usuarios"}}text-primary{{end}}">
             <img src="{{assetURL "/assets/icons/heroicons/outline/users.svg"}}" alt="" class="h-5 w-5 text-muted-foreground/50" />
             <span class="sidebar-item-label truncate text-xs font-semibold tracking-wide">Usuarios y roles</span>
@@ -44,7 +50,25 @@
     </div>
   </div>
 
-  <div class="mx-4 my-4 space-y-1">
+  <div class="mx-4 my-4 space-y-3">
+    {{if .Storage.Show}}
+    <div class="sidebar-storage" title="{{.Storage.Summary}}">
+      <div class="sidebar-storage-header">
+        <span class="sidebar-storage-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" focusable="false">
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
+            <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" />
+          </svg>
+        </span>
+        <span class="sidebar-storage-label">Almacenamiento</span>
+      </div>
+      <div class="sidebar-storage-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Storage.Percent}}" aria-label="{{.Storage.Summary}}">
+        <div class="sidebar-storage-fill" style="width: {{.Storage.Percent}}%"></div>
+      </div>
+      <p class="sidebar-storage-summary">{{.Storage.Summary}}</p>
+    </div>
+    {{end}}
     <a
       target="_blank"
       href="https://github.com/yovannylopez/docsy-dashboard"

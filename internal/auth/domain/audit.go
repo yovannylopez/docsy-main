@@ -22,6 +22,16 @@ const (
 	AuditActionUserCreated          = "user.created"
 	AuditActionPasswordChanged      = "password_changed"
 	AuditActionPasswordChangeFailed = "password_change_failed"
+
+	AuditActionArchiveDocumentCreated   = "archive.document.created"
+	AuditActionArchiveDocumentUpdated   = "archive.document.updated"
+	AuditActionArchiveDocumentArchived  = "archive.document.archived"
+	AuditActionArchiveFileUploaded      = "archive.file.uploaded"
+	AuditActionArchiveFileDeleted       = "archive.file.deleted"
+	AuditActionArchiveHouseholdCreated  = "archive.household.created"
+	AuditActionArchiveMemberInvited     = "archive.member.invited"
+	AuditActionArchiveMemberRoleUpdated = "archive.member.role_updated"
+	AuditActionArchiveMemberRemoved     = "archive.member.removed"
 )
 
 // ValidAuditResult indica si s es un valor permitido para el filtro `result` y los valores persistidos.

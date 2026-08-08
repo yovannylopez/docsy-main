@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -17,10 +18,9 @@ import (
 )
 
 const (
-	auditListTitle        = "Auditoría"
-	auditListSubtitle     = "Logs de actividad del sistema"
-	msgAuditLoadError     = "No se pudieron cargar los logs de auditoría. Intenta de nuevo."
-	shortUserIDDisplayLen = 8
+	auditListTitle    = "Auditoría"
+	auditListSubtitle = "Logs de actividad del sistema"
+	msgAuditLoadError = "No se pudieron cargar los logs de auditoría. Intenta de nuevo."
 )
 
 // AuditFiltersView holds filter field values for the audit list page.
@@ -34,7 +34,7 @@ type AuditFiltersView struct {
 // AuditLogRowView is a single audit log row for templates.
 type AuditLogRowView struct {
 	CreatedAtFormatted string
-	UserIDShort        string
+	UserDisplayName    string
 	ActionLabel        string
 	ResourceLabel      string
 	ResultLabel        string
@@ -59,11 +59,15 @@ type AuditListPageData struct {
 // AuditPageHandler serves server-rendered audit pages.
 type AuditPageHandler struct {
 	listAuditLogsUC ports.ListAuditLogsUseCase
+	userRepo        ports.UserRepository
 }
 
 // NewAuditPageHandler creates an AuditPageHandler.
-func NewAuditPageHandler(listAuditLogsUC ports.ListAuditLogsUseCase) *AuditPageHandler {
-	return &AuditPageHandler{listAuditLogsUC: listAuditLogsUC}
+func NewAuditPageHandler(listAuditLogsUC ports.ListAuditLogsUseCase, userRepo ports.UserRepository) *AuditPageHandler {
+	return &AuditPageHandler{
+		listAuditLogsUC: listAuditLogsUC,
+		userRepo:        userRepo,
+	}
 }
 
 // List renders the audit log list page or an HTMX table partial.
@@ -112,7 +116,7 @@ func (h *AuditPageHandler) List(c echo.Context) error {
 
 	data := AuditListPageData{
 		AppLayoutData:   weblayout.AppLayoutFromEcho(c, auditListTitle, auditListSubtitle, "/auditoria"),
-		AuditLogs:       mapAuditLogRows(logs),
+		AuditLogs:       mapAuditLogRows(c.Request().Context(), h.userRepo, logs),
 		Total:           total,
 		Filters:         filtersView,
 		Pagination:      weblayout.NewPaginationData(params.Offset, params.Limit, total, "/auditoria", c.QueryParams()),
@@ -170,12 +174,13 @@ func buildAuditFilters(c echo.Context, params pagination.Params, view AuditFilte
 	return filters, nil
 }
 
-func mapAuditLogRows(logs []entities.AuditLog) []AuditLogRowView {
+func mapAuditLogRows(ctx context.Context, userRepo ports.UserRepository, logs []entities.AuditLog) []AuditLogRowView {
+	names := resolveAuditUserNames(ctx, userRepo, logs)
 	rows := make([]AuditLogRowView, 0, len(logs))
 	for _, log := range logs {
 		rows = append(rows, AuditLogRowView{
 			CreatedAtFormatted: log.CreatedAt.Format("02/01/2006 15:04"),
-			UserIDShort:        shortUserID(log.UserID),
+			UserDisplayName:    auditUserDisplayName(log.UserID, names),
 			ActionLabel:        humanizeAuditAction(log.Action),
 			ResourceLabel:      humanizeAuditResource(log.Resource),
 			ResultLabel:        humanizeAuditResult(log.Result),
@@ -187,28 +192,59 @@ func mapAuditLogRows(logs []entities.AuditLog) []AuditLogRowView {
 	return rows
 }
 
-func shortUserID(userID *string) string {
+func resolveAuditUserNames(ctx context.Context, userRepo ports.UserRepository, logs []entities.AuditLog) map[string]string {
+	names := make(map[string]string)
+	if userRepo == nil {
+		return names
+	}
+	for _, log := range logs {
+		if log.UserID == nil || *log.UserID == "" {
+			continue
+		}
+		id := *log.UserID
+		if _, ok := names[id]; ok {
+			continue
+		}
+		user, err := userRepo.FindByID(ctx, id)
+		if err != nil || user == nil {
+			names[id] = ""
+			continue
+		}
+		names[id] = displayName(user)
+	}
+	return names
+}
+
+func auditUserDisplayName(userID *string, names map[string]string) string {
 	if userID == nil || *userID == "" {
 		return "—"
 	}
-	id := *userID
-	if len(id) > shortUserIDDisplayLen {
-		return id[:shortUserIDDisplayLen] + "…"
+	if name := strings.TrimSpace(names[*userID]); name != "" {
+		return name
 	}
-	return id
+	return "Usuario desconocido"
 }
 
 func humanizeAuditAction(action string) string {
 	labels := map[string]string{
-		domain.AuditActionCreate:               "Crear",
-		domain.AuditActionUpdate:               "Actualizar",
-		domain.AuditActionDelete:               "Eliminar",
-		domain.AuditActionRead:                 "Leer",
-		domain.AuditActionUserLoginAttempt:     "Intento de login",
-		domain.AuditActionUserLogout:           "Cierre de sesión",
-		domain.AuditActionUserCreated:          "Usuario creado",
-		domain.AuditActionPasswordChanged:      "Contraseña cambiada",
-		domain.AuditActionPasswordChangeFailed: "Cambio de contraseña fallido",
+		domain.AuditActionCreate:                   "Crear",
+		domain.AuditActionUpdate:                   "Actualizar",
+		domain.AuditActionDelete:                   "Eliminar",
+		domain.AuditActionRead:                     "Leer",
+		domain.AuditActionUserLoginAttempt:         "Intento de login",
+		domain.AuditActionUserLogout:               "Cierre de sesión",
+		domain.AuditActionUserCreated:              "Usuario creado",
+		domain.AuditActionPasswordChanged:          "Contraseña cambiada",
+		domain.AuditActionPasswordChangeFailed:     "Cambio de contraseña fallido",
+		domain.AuditActionArchiveDocumentCreated:   "Documento de archivo creado",
+		domain.AuditActionArchiveDocumentUpdated:   "Documento de archivo actualizado",
+		domain.AuditActionArchiveDocumentArchived:  "Documento de archivo archivado",
+		domain.AuditActionArchiveFileUploaded:      "Archivo adjunto subido",
+		domain.AuditActionArchiveFileDeleted:       "Archivo adjunto eliminado",
+		domain.AuditActionArchiveHouseholdCreated:  "Hogar de archivo creado",
+		domain.AuditActionArchiveMemberInvited:     "Miembro de archivo invitado",
+		domain.AuditActionArchiveMemberRoleUpdated: "Rol de miembro de archivo actualizado",
+		domain.AuditActionArchiveMemberRemoved:     "Miembro de archivo eliminado",
 	}
 	if label, ok := labels[action]; ok {
 		return label
@@ -260,6 +296,15 @@ func auditActionOptions() []weblayout.SelectOption {
 		{Value: domain.AuditActionUserLogout, Label: "Cierre de sesión"},
 		{Value: domain.AuditActionUserCreated, Label: "Usuario creado"},
 		{Value: domain.AuditActionPasswordChanged, Label: "Contraseña cambiada"},
+		{Value: domain.AuditActionArchiveDocumentCreated, Label: "Documento de archivo creado"},
+		{Value: domain.AuditActionArchiveDocumentUpdated, Label: "Documento de archivo actualizado"},
+		{Value: domain.AuditActionArchiveDocumentArchived, Label: "Documento de archivo archivado"},
+		{Value: domain.AuditActionArchiveFileUploaded, Label: "Archivo adjunto subido"},
+		{Value: domain.AuditActionArchiveFileDeleted, Label: "Archivo adjunto eliminado"},
+		{Value: domain.AuditActionArchiveHouseholdCreated, Label: "Hogar de archivo creado"},
+		{Value: domain.AuditActionArchiveMemberInvited, Label: "Miembro de archivo invitado"},
+		{Value: domain.AuditActionArchiveMemberRoleUpdated, Label: "Rol de miembro actualizado"},
+		{Value: domain.AuditActionArchiveMemberRemoved, Label: "Miembro de archivo eliminado"},
 	}
 }
 
@@ -269,6 +314,10 @@ func auditResourceOptions() []weblayout.SelectOption {
 		{Value: "users", Label: "Usuarios"},
 		{Value: "auth", Label: "Autenticación"},
 		{Value: "sessions", Label: "Sesiones"},
+		{Value: "document", Label: "Documento"},
+		{Value: "document_file", Label: "Adjunto"},
+		{Value: "workspace", Label: "Workspace"},
+		{Value: "workspace_member", Label: "Miembro de workspace"},
 	}
 }
 

@@ -1,0 +1,87 @@
+{{define "archive/members"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+{{template "partials/form-header" .}}
+
+<div class="w-full max-w-[98%] mx-auto space-y-6">
+  {{template "partials/alert-success-message" .Success}}
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+
+  {{if .Workspace}}
+  <div class="bg-card shadow-custom rounded-lg border border-border p-6">
+    <h3 class="text-foreground text-lg font-semibold">{{.Workspace.Name}}</h3>
+    <p class="text-muted-foreground mt-1 text-sm">Tu rol: {{.Workspace.MemberRole}}</p>
+  </div>
+  {{end}}
+
+  {{if .CanManage}}
+  <div class="bg-card shadow-custom rounded-lg border border-border p-6">
+    <div class="section-heading">
+      <div class="section-heading-icon section-heading-icon-success" aria-hidden="true">{{template "icons/glyph-upload" .}}</div>
+      <div class="section-heading-text">
+        <h3>Invitar miembro</h3>
+        <p>Solo usuarios registrados pueden ser invitados</p>
+      </div>
+    </div>
+    <form method="post" action="/archivo/hogares/{{.Workspace.ID}}/miembros" class="grid grid-cols-1 gap-4 md:grid-cols-3 md:items-end">
+      <div class="md:col-span-2">
+        <label for="email" class="text-foreground mb-1 block text-sm font-medium">Correo del usuario</label>
+        <input type="email" id="email" name="email" value="{{.InviteForm.Email}}" required
+          placeholder="usuario@ejemplo.com"
+          class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm" />
+      </div>
+      <div>
+        <label for="role" class="text-foreground mb-1 block text-sm font-medium">Rol</label>
+        <select id="role" name="role" class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm">
+          <option value="member" {{if eq .InviteForm.Role "member"}}selected{{end}}>Miembro (editar)</option>
+          <option value="viewer" {{if eq .InviteForm.Role "viewer"}}selected{{end}}>Solo lectura</option>
+        </select>
+      </div>
+      <div class="md:col-span-3">
+        <button type="submit" class="btn btn-primary rounded-md px-4 py-2 text-sm font-medium">Invitar</button>
+      </div>
+    </form>
+    <p class="text-muted-foreground mt-3 text-xs">Solo usuarios registrados pueden ser invitados.</p>
+  </div>
+  {{end}}
+
+  <div class="bg-card shadow-custom overflow-hidden rounded-lg border border-border">
+    <div class="border-border border-b px-6 py-4">
+      <h3 class="form-section-title mb-0">Miembros</h3>
+    </div>
+    {{if .Members}}
+    <ul class="divide-border divide-y">
+      {{range .Members}}
+      <li class="flex flex-col gap-2 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-foreground text-sm font-medium">{{if .DisplayName}}{{.DisplayName}}{{else}}{{.Email}}{{end}}</p>
+          <p class="text-muted-foreground text-xs">{{.Email}} · {{.Role}}</p>
+        </div>
+        {{if $.CanManage}}
+        {{if ne .Role "owner"}}
+        <form method="post" action="/archivo/hogares/{{$.Workspace.ID}}/miembros/{{.UserID}}/eliminar" onsubmit="return confirm('¿Eliminar a este miembro?');">
+          <button type="submit" class="btn btn-secondary rounded-md px-3 py-1.5 text-xs font-medium text-destructive">Eliminar</button>
+        </form>
+        {{end}}
+        {{end}}
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <p class="text-muted-foreground px-6 py-8 text-sm">No hay miembros registrados.</p>
+    {{end}}
+  </div>
+
+  <div class="flex gap-3">
+    <a href="/archivo" class="btn btn-secondary inline-flex rounded-md px-4 py-2 text-sm font-medium">Volver al archivo</a>
+    {{if .Workspace}}
+    <a href="/archivo/documentos?workspace_id={{.Workspace.ID}}" class="btn btn-primary inline-flex rounded-md px-4 py-2 text-sm font-medium">Ver documentos</a>
+    {{end}}
+  </div>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

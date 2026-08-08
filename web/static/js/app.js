@@ -142,12 +142,166 @@
 
   function openModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove('hidden');
+    if (!modal) return;
+    modal.classList.add('is-open');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
   }
 
   function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) modal.classList.add('hidden');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  let previewObjectURL = null;
+
+  function revokePreviewObjectURL() {
+    if (previewObjectURL) {
+      URL.revokeObjectURL(previewObjectURL);
+      previewObjectURL = null;
+    }
+  }
+
+  function setPreviewLoading(visible) {
+    const loading = document.getElementById('document-preview-loading');
+    if (!loading) return;
+    loading.classList.toggle('is-visible', !!visible);
+  }
+
+  function hideEl(el) {
+    if (!el) return;
+    el.hidden = true;
+    el.classList.add('hidden');
+  }
+
+  function showEl(el) {
+    if (!el) return;
+    el.hidden = false;
+    el.classList.remove('hidden');
+  }
+
+  function resetPreviewMedia() {
+    const iframe = document.getElementById('document-preview-iframe');
+    const embed = document.getElementById('document-preview-embed');
+    const image = document.getElementById('document-preview-image');
+    const unsupported = document.getElementById('document-preview-unsupported');
+    revokePreviewObjectURL();
+    if (iframe) {
+      hideEl(iframe);
+      iframe.removeAttribute('src');
+    }
+    if (embed) {
+      hideEl(embed);
+      embed.removeAttribute('src');
+    }
+    if (image) {
+      hideEl(image);
+      image.removeAttribute('src');
+    }
+    hideEl(unsupported);
+  }
+
+  function isFirefox() {
+    return typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent);
+  }
+
+  /**
+   * Abre vista previa de adjunto (PDF / imagen).
+   * Usa fetch+blob para enviar cookie de sesión; en Firefox PDF usa <embed>.
+   */
+  async function openDocumentPreview(url, filename, kind) {
+    const modal = document.getElementById('document-preview-modal');
+    if (!modal || !url) {
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    const titleEl = document.getElementById('document-preview-filename');
+    const openLink = document.getElementById('document-preview-open');
+    const iframe = document.getElementById('document-preview-iframe');
+    const embed = document.getElementById('document-preview-embed');
+    const image = document.getElementById('document-preview-image');
+    const unsupported = document.getElementById('document-preview-unsupported');
+
+    if (titleEl) titleEl.textContent = filename || '';
+    if (openLink) openLink.href = url;
+
+    resetPreviewMedia();
+    setPreviewLoading(true);
+    openModal('document-preview-modal');
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: '*/*' },
+      });
+      if (!response.ok) {
+        throw new Error('preview_http_' + response.status);
+      }
+
+      const rawBlob = await response.blob();
+      const headerType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+      const blobType = (rawBlob.type || headerType || '').toLowerCase();
+      const lowerName = (filename || '').toLowerCase();
+
+      let resolvedKind = kind;
+      if (!resolvedKind || resolvedKind === 'other') {
+        if (blobType.includes('pdf') || lowerName.endsWith('.pdf')) {
+          resolvedKind = 'pdf';
+        } else if (blobType.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/.test(lowerName)) {
+          resolvedKind = 'image';
+        }
+      }
+
+      let mime = blobType;
+      if (resolvedKind === 'pdf' && !mime.includes('pdf')) {
+        mime = 'application/pdf';
+      } else if (resolvedKind === 'image' && !mime.startsWith('image/')) {
+        if (lowerName.endsWith('.png')) mime = 'image/png';
+        else if (lowerName.endsWith('.webp')) mime = 'image/webp';
+        else if (lowerName.endsWith('.gif')) mime = 'image/gif';
+        else mime = 'image/jpeg';
+      }
+
+      const typedBlob = mime && mime !== rawBlob.type ? new Blob([rawBlob], { type: mime }) : rawBlob;
+      previewObjectURL = URL.createObjectURL(typedBlob);
+
+      if (resolvedKind === 'pdf') {
+        // Firefox suele manejar mejor PDF con <embed> + MIME tipado.
+        if (isFirefox() && embed) {
+          embed.type = 'application/pdf';
+          embed.src = previewObjectURL;
+          showEl(embed);
+        } else if (iframe) {
+          iframe.src = previewObjectURL;
+          showEl(iframe);
+        } else if (embed) {
+          embed.type = 'application/pdf';
+          embed.src = previewObjectURL;
+          showEl(embed);
+        }
+      } else if (resolvedKind === 'image' && image) {
+        image.src = previewObjectURL;
+        image.alt = filename || 'Vista previa';
+        showEl(image);
+      } else {
+        showEl(unsupported);
+      }
+    } catch (err) {
+      showEl(unsupported);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closeDocumentPreview() {
+    resetPreviewMedia();
+    setPreviewLoading(false);
+    closeModal('document-preview-modal');
   }
 
   function initHtmxAuth() {
@@ -168,6 +322,10 @@
     }
   });
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDocumentPreview();
+  });
+
   document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
     initTheme();
@@ -182,4 +340,6 @@
   window.setThemeColor = setThemeColor;
   window.openModal = openModal;
   window.closeModal = closeModal;
+  window.openDocumentPreview = openDocumentPreview;
+  window.closeDocumentPreview = closeDocumentPreview;
 })();

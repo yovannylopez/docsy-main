@@ -163,7 +163,11 @@ const (
 
 	// File configurations
 	DefaultMaxFileSizeMB = 10
+	BytesPerKB           = 1024
 	BytesPerMB           = 1024 * 1024
+	BytesPerGB           = 1024 * 1024 * 1024
+	// DefaultStorageQuotaBytes is the soft display quota for the sidebar (10 GiB).
+	DefaultStorageQuotaBytes = 10 * BytesPerGB
 
 	// Specific configurations for multiple files
 	MaxFilesPerUpload = 10  // Maximum 10 files per upload

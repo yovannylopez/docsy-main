@@ -1,8 +1,13 @@
 {{define "partials/audit-table"}}
 <div class="bg-card shadow-custom overflow-hidden rounded-lg border border-border">
   <div class="border-border border-b px-4 py-3">
-    <h2 class="text-foreground text-lg font-semibold">Logs de auditoría</h2>
-    <p class="text-muted-foreground text-sm">Mostrando {{len .AuditLogs}} de {{.Total}} logs</p>
+    <div class="section-heading mb-0 border-0 pb-0">
+      <div class="section-heading-icon section-heading-icon-warning" aria-hidden="true">{{template "icons/glyph-search" .}}</div>
+      <div class="section-heading-text">
+        <h3>Logs de auditoría</h3>
+        <p>Mostrando {{len .AuditLogs}} de {{.Total}} logs</p>
+      </div>
+    </div>
   </div>
 
   {{if .AuditLogs}}
@@ -23,7 +28,7 @@
         {{range .AuditLogs}}
         <tr class="hover:bg-muted/20">
           <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.CreatedAtFormatted}}</td>
-          <td class="text-foreground px-6 py-4 font-mono text-xs whitespace-nowrap">{{.UserIDShort}}</td>
+          <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.UserDisplayName}}</td>
           <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.ActionLabel}}</td>
           <td class="text-foreground px-6 py-4 text-sm whitespace-nowrap">{{.ResourceLabel}}</td>
           <td class="px-6 py-4 whitespace-nowrap">

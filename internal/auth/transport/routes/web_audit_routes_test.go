@@ -12,7 +12,7 @@ import (
 
 func TestWebAuditRoutes_Setup_RegistersRoutes(t *testing.T) {
 	e := echo.New()
-	wr := NewWebAuditRoutes(&handlers.AuditPageHandler{}, authmiddleware.NewWebAuthMiddleware(nil))
+	wr := NewWebAuditRoutes(handlers.NewAuditPageHandler(nil, nil), authmiddleware.NewWebAuthMiddleware(nil))
 	wr.Setup(e)
 
 	paths := make([]string, 0, len(e.Routes()))

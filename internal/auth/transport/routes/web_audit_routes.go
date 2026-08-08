@@ -11,13 +11,19 @@ import (
 type WebAuditRoutes struct {
 	pageHandler *handlers.AuditPageHandler
 	webAuthMW   *authmiddleware.WebAuthMiddleware
+	extraMW     []echo.MiddlewareFunc
 }
 
 // NewWebAuditRoutes creates a WebAuditRoutes instance.
-func NewWebAuditRoutes(pageHandler *handlers.AuditPageHandler, webAuthMW *authmiddleware.WebAuthMiddleware) *WebAuditRoutes {
+func NewWebAuditRoutes(
+	pageHandler *handlers.AuditPageHandler,
+	webAuthMW *authmiddleware.WebAuthMiddleware,
+	extraMW ...echo.MiddlewareFunc,
+) *WebAuditRoutes {
 	return &WebAuditRoutes{
 		pageHandler: pageHandler,
 		webAuthMW:   webAuthMW,
+		extraMW:     extraMW,
 	}
 }
 
@@ -25,5 +31,8 @@ func NewWebAuditRoutes(pageHandler *handlers.AuditPageHandler, webAuthMW *authmi
 func (wr *WebAuditRoutes) Setup(e *echo.Echo) {
 	g := e.Group("")
 	g.Use(wr.webAuthMW.RequireAuth())
+	for _, mw := range wr.extraMW {
+		g.Use(mw)
+	}
 	g.GET("/auditoria", wr.pageHandler.List, wr.webAuthMW.RequirePermission("audit.read"))
 }

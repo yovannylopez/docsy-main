@@ -11,13 +11,19 @@ import (
 type WebUsersRoutes struct {
 	pageHandler *handlers.UsersPageHandler
 	webAuthMW   *authmiddleware.WebAuthMiddleware
+	extraMW     []echo.MiddlewareFunc
 }
 
 // NewWebUsersRoutes creates a WebUsersRoutes instance.
-func NewWebUsersRoutes(pageHandler *handlers.UsersPageHandler, webAuthMW *authmiddleware.WebAuthMiddleware) *WebUsersRoutes {
+func NewWebUsersRoutes(
+	pageHandler *handlers.UsersPageHandler,
+	webAuthMW *authmiddleware.WebAuthMiddleware,
+	extraMW ...echo.MiddlewareFunc,
+) *WebUsersRoutes {
 	return &WebUsersRoutes{
 		pageHandler: pageHandler,
 		webAuthMW:   webAuthMW,
+		extraMW:     extraMW,
 	}
 }
 
@@ -25,6 +31,9 @@ func NewWebUsersRoutes(pageHandler *handlers.UsersPageHandler, webAuthMW *authmi
 func (wr *WebUsersRoutes) Setup(e *echo.Echo) {
 	g := e.Group("")
 	g.Use(wr.webAuthMW.RequireAuth())
+	for _, mw := range wr.extraMW {
+		g.Use(mw)
+	}
 
 	g.GET("/usuarios", wr.pageHandler.ListUsers, wr.webAuthMW.RequirePermission("users.read"))
 	g.GET("/usuarios/nuevo", wr.pageHandler.ShowCreate, wr.webAuthMW.RequirePermission("users.create"))

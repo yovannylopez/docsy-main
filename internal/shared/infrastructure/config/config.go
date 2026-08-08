@@ -13,10 +13,12 @@ import (
 )
 
 // StorageConfig configures file storage (optional).
-// Adjust DOCUMENT_PATH and MAX_FILE_SIZE in .env if the project requires file uploads.
+// Adjust DOCUMENT_PATH, MAX_FILE_SIZE and STORAGE_QUOTA_BYTES in .env if needed.
 type StorageConfig struct {
 	DocumentPath string `json:"document_path"`
 	MaxFileSize  int64  `json:"max_file_size"`
+	// QuotaBytes is a soft display quota for the sidebar storage indicator (not enforced on upload yet).
+	QuotaBytes int64 `json:"quota_bytes"`
 }
 
 // RedisConfig configures distributed rate limiting (optional).
@@ -87,6 +89,10 @@ func NewCoreConfig(envFile string) (*CoreConfig, error) {
 			MaxFileSize: config.GetInt64Env(
 				"MAX_FILE_SIZE",
 				int64(constants.DefaultMaxFileSizeMB*constants.BytesPerMB),
+			),
+			QuotaBytes: config.GetInt64Env(
+				"STORAGE_QUOTA_BYTES",
+				int64(constants.DefaultStorageQuotaBytes),
 			),
 		},
 		DBPool: getDBPoolConfig(),

@@ -1,0 +1,135 @@
+{{define "archive/documents"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+
+<div class="files-browser w-full max-w-[98%] mx-auto space-y-5">
+  <nav class="files-breadcrumb text-muted-foreground flex flex-wrap items-center gap-2 text-sm" aria-label="Ruta">
+    <a href="/archivo" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors" title="Mi archivo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9.75L12 3l9 6.75V20a1.5 1.5 0 01-1.5 1.5H4.5A1.5 1.5 0 013 20V9.75z" />
+      </svg>
+      Archivo
+    </a>
+    <span aria-hidden="true">/</span>
+    {{if or .Category .Query}}
+    <a href="{{.BrowseURL}}" class="hover:text-foreground transition-colors">Documentos</a>
+    {{if .CategoryLabel}}
+    <span aria-hidden="true">/</span>
+    <span class="text-foreground font-medium">{{.CategoryLabel}}</span>
+    {{else if .Query}}
+    <span aria-hidden="true">/</span>
+    <span class="text-foreground font-medium">Búsqueda</span>
+    {{end}}
+    {{else}}
+    <span class="text-foreground font-medium">Documentos</span>
+    {{end}}
+  </nav>
+
+  <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+        {{if .CategoryLabel}}{{.CategoryLabel}}{{else if .Query}}Resultados{{else}}{{.Title}}{{end}}
+      </h1>
+      {{if .Subtitle}}{{if not .CategoryLabel}}{{if not .Query}}
+      <p class="text-muted-foreground mt-1 text-sm sm:text-base">{{.Subtitle}}</p>
+      {{end}}{{end}}{{end}}
+    </div>
+    {{if eq .Mode "folders"}}
+    <p class="text-muted-foreground text-sm">{{len .Folders}} categorías · {{.Total}} documentos</p>
+    {{else}}
+    <p class="text-muted-foreground text-sm">{{len .Documents}} de {{.Total}} documentos</p>
+    {{end}}
+  </div>
+
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+  {{template "partials/alert-success-message" .Success}}
+
+  <div class="files-toolbar bg-card border-border rounded-2xl border p-3 sm:p-4">
+    <form method="get" action="/archivo/documentos" class="flex flex-col gap-3 lg:flex-row lg:items-center">
+      {{if .WorkspaceID}}<input type="hidden" name="workspace_id" value="{{.WorkspaceID}}" />{{end}}
+      <input type="hidden" name="view" value="{{if .View}}{{.View}}{{else}}grid{{end}}" />
+      {{if and .Category (not .Query)}}
+      <input type="hidden" name="category" value="{{.Category}}" />
+      {{end}}
+
+      <div class="files-search relative min-w-0 flex-1">
+        <span class="text-muted-foreground pointer-events-none absolute inset-y-0 left-3 flex items-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </span>
+        <input
+          type="search"
+          name="q"
+          value="{{.Query}}"
+          placeholder="Buscar archivos..."
+          class="border-border bg-background text-foreground focus:border-primary focus:ring-primary/20 w-full rounded-xl border py-2.5 pl-10 pr-3 text-sm shadow-none outline-none focus:ring-2" />
+      </div>
+
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+        {{if gt (len .Workspaces) 1}}
+        <select name="workspace_id" class="border-border bg-background text-foreground rounded-xl border px-3 py-2.5 text-sm">
+          {{range .Workspaces}}
+          <option value="{{.ID}}" {{if eq $.WorkspaceID .ID}}selected{{end}}>{{.Name}}</option>
+          {{end}}
+        </select>
+        {{end}}
+        {{if ne .Mode "folders"}}
+        <select name="category" class="border-border bg-background text-foreground rounded-xl border px-3 py-2.5 text-sm">
+          <option value="">Todas las categorías</option>
+          {{range .Categories}}
+          <option value="{{.Code}}" {{if eq $.Category .Code}}selected{{end}}>{{.LabelES}}</option>
+          {{end}}
+        </select>
+        {{end}}
+        <select name="status" class="border-border bg-background text-foreground rounded-xl border px-3 py-2.5 text-sm">
+          <option value="active" {{if eq .Status "active"}}selected{{end}}>Activos</option>
+          <option value="archived" {{if eq .Status "archived"}}selected{{end}}>Archivados</option>
+          <option value="all" {{if eq .Status "all"}}selected{{end}}>Todos</option>
+        </select>
+        <button type="submit" class="btn btn-secondary rounded-xl px-4 py-2.5 text-sm font-medium">Filtrar</button>
+      </div>
+
+      <div class="flex items-center gap-2 lg:ml-auto">
+        {{if eq .Mode "documents"}}
+        <div class="files-view-toggle border-border bg-background inline-flex rounded-xl border p-1" role="group" aria-label="Vista">
+          <a
+            href="?view=grid{{if .Query}}&q={{.Query}}{{end}}{{if .Category}}&category={{.Category}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .WorkspaceID}}&workspace_id={{.WorkspaceID}}{{end}}"
+            class="files-view-btn {{if ne .View "list"}}is-active{{end}}"
+            title="Vista en cuadrícula"
+            aria-label="Vista en cuadrícula">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z" />
+            </svg>
+          </a>
+          <a
+            href="?view=list{{if .Query}}&q={{.Query}}{{end}}{{if .Category}}&category={{.Category}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .WorkspaceID}}&workspace_id={{.WorkspaceID}}{{end}}"
+            class="files-view-btn {{if eq .View "list"}}is-active{{end}}"
+            title="Vista en lista"
+            aria-label="Vista en lista">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </a>
+        </div>
+        {{end}}
+        <a href="{{.CreateURL}}" class="btn btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Nuevo
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div id="archive-docs-table">
+    {{template "partials/archive-docs-table" .}}
+  </div>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}
