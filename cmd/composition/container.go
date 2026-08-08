@@ -82,7 +82,7 @@ func NewContainer(cfg *config.CoreConfig) (*Container, error) {
 		authC.GetAuditRepository(),
 	)
 	archiveC, err := archiveContainer.NewArchiveContainer(
-		db, cfg.Storage, authC.UserRepository, authC.GetAuditRepository(),
+		db, cfg.Storage, cfg.OCR, authC.UserRepository, authC.GetAuditRepository(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create archive container: %w", err)

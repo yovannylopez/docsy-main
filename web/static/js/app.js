@@ -313,6 +313,176 @@
     });
   }
 
+  function setFieldIfAllowed(id, value, emptyOnly) {
+    if (value == null || value === '') return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    const current = (el.value || '').trim();
+    if (emptyOnly && current !== '') return;
+    el.value = value;
+  }
+
+  function readExtraFields() {
+    const input = document.getElementById('extra_fields');
+    if (!input) return [];
+    try {
+      const parsed = JSON.parse(input.value || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeExtraFields(fields) {
+    const input = document.getElementById('extra_fields');
+    const list = document.getElementById('extra-fields-badges');
+    const empty = document.getElementById('extra-fields-empty');
+    if (!input || !list) return;
+
+    const safe = Array.isArray(fields) ? fields.filter((f) => f && f.key && f.label && f.value) : [];
+    input.value = JSON.stringify(safe);
+    list.innerHTML = '';
+    safe.forEach((f) => {
+      const badge = document.createElement('span');
+      badge.className = 'extra-field-badge';
+      badge.dataset.key = f.key;
+      badge.dataset.label = f.label;
+      badge.dataset.value = f.value;
+
+      const text = document.createElement('span');
+      text.className = 'extra-field-badge-text';
+      text.textContent = f.label + ': ' + f.value;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'extra-field-badge-remove';
+      btn.setAttribute('aria-label', 'Quitar ' + f.label);
+      btn.dataset.removeExtra = '1';
+      btn.textContent = '×';
+
+      badge.appendChild(text);
+      badge.appendChild(btn);
+      list.appendChild(badge);
+    });
+    if (empty) empty.classList.toggle('hidden', safe.length > 0);
+  }
+
+  function mergeExtraFields(incoming, replaceAll) {
+    const current = readExtraFields();
+    const next = replaceAll ? [] : current.slice();
+    const seen = new Set(next.map((f) => String(f.key || '').toLowerCase()));
+    (incoming || []).forEach((f) => {
+      if (!f || !f.key || !f.label || !f.value) return;
+      const key = String(f.key).toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      next.push({ key: f.key, label: f.label, value: String(f.value) });
+    });
+    writeExtraFields(next);
+  }
+
+  function initExtraFieldBadges() {
+    const list = document.getElementById('extra-fields-badges');
+    if (!list) return;
+    // Sync from server-rendered badges / hidden input.
+    writeExtraFields(readExtraFields());
+    list.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove-extra]');
+      if (!btn) return;
+      const badge = btn.closest('.extra-field-badge');
+      if (!badge) return;
+      const key = badge.dataset.key;
+      writeExtraFields(readExtraFields().filter((f) => f.key !== key));
+    });
+  }
+
+  function applyOCRSuggestions(data, emptyOnly) {
+    if (!data || typeof data !== 'object') return;
+    setFieldIfAllowed('title', data.title, emptyOnly);
+    setFieldIfAllowed('issuer', data.issuer, emptyOnly);
+    setFieldIfAllowed('reference_number', data.reference_number, emptyOnly);
+    setFieldIfAllowed('document_date', data.document_date, emptyOnly);
+    setFieldIfAllowed('due_date', data.due_date, emptyOnly);
+    setFieldIfAllowed('amount', data.amount, emptyOnly);
+    setFieldIfAllowed('currency', data.currency, emptyOnly);
+    // Prefer structured extras over free-text notes from OCR.
+    const extras = Array.isArray(data.extra_fields)
+      ? data.extra_fields
+      : Array.isArray(data.extraFields)
+        ? data.extraFields
+        : [];
+    if (extras.length) {
+      mergeExtraFields(extras, !emptyOnly);
+      const notesEl = document.getElementById('notes');
+      if (notesEl && /^Total sugerido:/i.test((notesEl.value || '').trim())) {
+        notesEl.value = '';
+      }
+    } else if (data.notes) {
+      setFieldIfAllowed('notes', data.notes, emptyOnly);
+    }
+  }
+
+  async function analyzeDocumentWithOCR(btn) {
+    const statusEls = document.querySelectorAll('#ocr-status');
+    const setStatus = (msg) => statusEls.forEach((el) => { el.textContent = msg; });
+    const inputId = btn?.dataset?.ocrFileInput || 'file';
+    const emptyOnly = btn?.dataset?.ocrFillEmptyOnly === 'true';
+    const input = document.getElementById(inputId);
+    const file = input?.files?.[0];
+
+    if (!file) {
+      setStatus('Selecciona un archivo primero.');
+      return;
+    }
+
+    setStatus('Analizando con OCR…');
+    btn.disabled = true;
+
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/archivo/documentos/ocr-sugerir', {
+        method: 'POST',
+        body,
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg =
+          payload?.error ||
+          payload?.message ||
+          'No se pudo analizar el archivo.';
+        setStatus(msg);
+        return;
+      }
+      const data = payload?.data ?? payload;
+      applyOCRSuggestions(data, emptyOnly);
+      const n = Array.isArray(data?.extra_fields)
+        ? data.extra_fields.length
+        : Array.isArray(data?.extraFields)
+          ? data.extraFields.length
+          : 0;
+      setStatus(
+        n > 0
+          ? 'Campos y ' + n + ' dato(s) adicional(es) sugeridos. Revísalos antes de guardar.'
+          : 'Campos sugeridos. Revísalos antes de guardar.',
+      );
+    } catch (_) {
+      setStatus('Error de red al analizar el archivo.');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function initOCRSuggest() {
+    const btn = document.getElementById('ocr-analyze-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      analyzeDocumentWithOCR(btn);
+    });
+  }
+
   document.addEventListener('click', (e) => {
     const profileBtn = document.getElementById('profile-menu-button');
     const profileMenu = document.getElementById('profile-menu');
@@ -330,6 +500,8 @@
     initSidebar();
     initTheme();
     initHtmxAuth();
+    initOCRSuggest();
+    initExtraFieldBadges();
   });
 
   window.togglePassword = togglePassword;

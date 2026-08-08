@@ -28,6 +28,7 @@ const (
 	AuditActionArchiveDocumentArchived  = "archive.document.archived"
 	AuditActionArchiveFileUploaded      = "archive.file.uploaded"
 	AuditActionArchiveFileDeleted       = "archive.file.deleted"
+	AuditActionArchiveOCRSuggested      = "archive.ocr_suggested"
 	AuditActionArchiveHouseholdCreated  = "archive.household.created"
 	AuditActionArchiveMemberInvited     = "archive.member.invited"
 	AuditActionArchiveMemberRoleUpdated = "archive.member.role_updated"

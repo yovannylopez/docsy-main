@@ -161,6 +161,7 @@ Dual transport: mismos use cases que `/api/v1/users` y `GET /api/v1/auditoria`.
 | `POST /archivo/hogares/:id/miembros/:userId/eliminar` | `archive.manage` | eliminar miembro |
 | `GET /archivo/documentos` | `archive.read` | listado con filtros `q`, `category`, `status`, `workspace_id` |
 | `GET/POST /archivo/documentos/nuevo` | `archive.write` | crear documento con adjunto obligatorio (multipart `file`, `workspace_id` opcional) |
+| `POST /archivo/documentos/ocr-sugerir` | `archive.write` | OCR local (Tesseract): sugiere metadatos JSON a partir de multipart `file` (PDF/imagen); el usuario confirma en el formulario |
 | `GET/POST /archivo/documentos/:id/editar` | `archive.write` | formulario editar metadatos (`workspace_id` en query/form) |
 | `POST /archivo/documentos/:id/archivos` | `archive.write` | subir adjunto (PDF, imagen, Word, Excel; multipart `file`) |
 | `GET /archivo/documentos/:id/archivos/:fileId` | `archive.read` | descargar adjunto |
@@ -181,9 +182,17 @@ Dual transport: mismos use cases que `/api/v1/users` y `GET /api/v1/auditoria`.
 
 Storage local: `DOCUMENT_PATH` (default `./storage/documents`), límite por archivo `MAX_FILE_SIZE` (default 10 MB), cuota blanda del sidebar `STORAGE_QUOTA_BYTES` (default 10 GiB; aún no se aplica en upload). Tipos: PDF, JPG/JPEG, PNG, TIFF, WebP, GIF, DOC/DOCX, XLS/XLSX.
 
+OCR (SDD 012): sugerencias de metadatos con Tesseract CLI. Variables `OCR_ENABLED`, `OCR_TESSERACT_BIN`, `OCR_LANG` (default `spa+eng`), `OCR_TIMEOUT_SECS`, `OCR_PDFTOTEXT_BIN`, `OCR_PDFTOPPM_BIN`. Los datos no mapeados a columnas fijas se sugieren como badges (`extra_fields` JSONB en el documento); el usuario puede quitarlos antes de guardar. Dependencias del host:
+
+```bash
+sudo apt install tesseract-ocr tesseract-ocr-spa poppler-utils
+```
+
+Si OCR está desactivado o falta el binario, crear/editar documentos sigue funcionando; el botón “Analizar con OCR” muestra un mensaje claro. Ver [`docs/sdd/012-archive-ocr-suggestions.md`](sdd/012-archive-ocr-suggestions.md).
+
 Bounded context: `internal/archive/`. Ver [`docs/sdd/011-archive-personal-family.md`](sdd/011-archive-personal-family.md).
 
-Las escrituras del archivo (documentos, adjuntos, hogares y miembros) quedan en `audit_logs` y se listan en `GET /auditoria` con acciones `archive.*`.
+Las escrituras del archivo (documentos, adjuntos, hogares y miembros) quedan en `audit_logs` y se listan en `GET /auditoria` con acciones `archive.*` (incluye `archive.ocr_suggested`).
 
 ## API REST
 

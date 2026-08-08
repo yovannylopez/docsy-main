@@ -7,6 +7,7 @@ import (
 
 	"github.com/yovannylopez/docsy-main/internal/archive/domain/ports"
 	"github.com/yovannylopez/docsy-main/internal/archive/infrastructure/adapters"
+	"github.com/yovannylopez/docsy-main/internal/archive/infrastructure/ocr"
 	"github.com/yovannylopez/docsy-main/internal/archive/infrastructure/repositories"
 	"github.com/yovannylopez/docsy-main/internal/archive/infrastructure/storage"
 	"github.com/yovannylopez/docsy-main/internal/archive/transport/handlers"
@@ -30,6 +31,7 @@ type ArchiveContainer struct {
 func NewArchiveContainer(
 	db *sqlx.DB,
 	storageCfg sharedconfig.StorageConfig,
+	ocrCfg sharedconfig.OCRConfig,
 	userFinder adapters.AuthUserFinder,
 	auditRepo authports.AuditRepository,
 ) (*ArchiveContainer, error) {
@@ -46,6 +48,9 @@ func NewArchiveContainer(
 	if err != nil {
 		return nil, fmt.Errorf("document storage: %w", err)
 	}
+
+	ocrExtractor := ocr.NewTesseractExtractor(ocrCfg)
+	suggestOCRUC := usecases.NewSuggestDocumentFieldsUseCase(ocrExtractor, storageCfg.MaxFileSize, auditRepo)
 
 	ensureUC := usecases.NewEnsurePersonalWorkspaceUseCase(wsRepo)
 
@@ -88,7 +93,7 @@ func NewArchiveContainer(
 		PageHandler: handlers.NewArchivePageHandler(
 			ensureUC, listWorkspacesUC, createHouseholdUC, listMembersUC, inviteMemberUC, removeMemberUC,
 			listDocsUC, listFoldersUC, getDocUC, createDocUC, createWithFileUC, updateDocUC, listCatsUC,
-			uploadFileUC, listFilesUC, downloadFileUC, deleteFileUC,
+			uploadFileUC, listFilesUC, downloadFileUC, deleteFileUC, suggestOCRUC,
 		),
 	}, nil
 }

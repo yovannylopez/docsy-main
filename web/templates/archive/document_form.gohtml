@@ -76,6 +76,22 @@
             placeholder="CUFE, periodo, conceptos adicionales…"
             class="border-border bg-background text-foreground w-full rounded-md border px-3 py-2 text-sm shadow-sm">{{.Form.Notes}}</textarea>
         </div>
+        <div class="md:col-span-2 space-y-2">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <label class="text-foreground text-sm font-medium">Datos adicionales</label>
+            <p class="text-muted-foreground text-xs">Sugeridos por OCR · puedes quitarlos antes de guardar</p>
+          </div>
+          <input type="hidden" id="extra_fields" name="extra_fields" value="{{if .Form.ExtraFieldsJSON}}{{.Form.ExtraFieldsJSON}}{{else}}[]{{end}}" />
+          <div id="extra-fields-badges" class="extra-fields-badges flex flex-wrap gap-2" aria-live="polite">
+            {{range .Form.ExtraFields}}
+            <span class="extra-field-badge" data-key="{{.Key}}" data-label="{{.Label}}" data-value="{{.Value}}">
+              <span class="extra-field-badge-text">{{.Label}}: {{.Value}}</span>
+              <button type="button" class="extra-field-badge-remove" aria-label="Quitar {{.Label}}" data-remove-extra="1">&times;</button>
+            </span>
+            {{end}}
+          </div>
+          <p id="extra-fields-empty" class="text-muted-foreground text-xs {{if .Form.ExtraFields}}hidden{{end}}">Sin datos adicionales por ahora.</p>
+        </div>
       </div>
       {{if .Form.GeneralError}}<p class="text-destructive mt-4 text-sm">{{.Form.GeneralError}}</p>{{end}}
     </div>
@@ -100,6 +116,13 @@
             <input type="file" id="file" name="file" required
               accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/tiff,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               class="border-border bg-background text-foreground mt-3 w-full rounded-md border px-3 py-2 text-sm" />
+            <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <button type="button" id="ocr-analyze-btn" class="btn btn-secondary rounded-md px-4 py-2 text-sm font-medium"
+                data-ocr-file-input="file" data-ocr-fill-empty-only="false">
+                Analizar con OCR
+              </button>
+              <p id="ocr-status" class="text-muted-foreground text-xs" aria-live="polite"></p>
+            </div>
           </div>
         </div>
       </div>
@@ -190,6 +213,21 @@
         </button>
       </div>
     </form>
+
+    <div class="border-border bg-muted/10 rounded-xl border p-4">
+      <p class="text-foreground text-sm font-semibold">Sugerir metadatos con OCR</p>
+      <p class="text-muted-foreground mt-1 text-xs">Solo rellena campos vacíos del formulario. PDF o imagen.</p>
+      <input type="file" id="ocr-file" name="ocr_file"
+        accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,application/pdf,image/jpeg,image/png,image/tiff,image/webp,image/gif"
+        class="border-border bg-background text-foreground mt-3 w-full rounded-md border px-3 py-2 text-sm" />
+      <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <button type="button" id="ocr-analyze-btn" class="btn btn-secondary rounded-md px-4 py-2 text-sm font-medium"
+          data-ocr-file-input="ocr-file" data-ocr-fill-empty-only="true">
+          Analizar con OCR
+        </button>
+        <p id="ocr-status" class="text-muted-foreground text-xs" aria-live="polite"></p>
+      </div>
+    </div>
   </div>
   {{template "components/document-preview-modal" .}}
   {{end}}

@@ -25,22 +25,23 @@ func NewDocumentRepositoryAdapter(db *sqlx.DB) *DocumentRepositoryAdapter {
 }
 
 type documentRow struct {
-	ID              string         `db:"id"`
-	WorkspaceID     string         `db:"workspace_id"`
-	CategoryCode    string         `db:"category_code"`
-	Title           string         `db:"title"`
-	DocumentDate    sql.NullTime   `db:"document_date"`
-	DueDate         sql.NullTime   `db:"due_date"`
-	Issuer          sql.NullString `db:"issuer"`
-	ReferenceNumber sql.NullString `db:"reference_number"`
-	AmountCents     sql.NullInt64  `db:"amount_cents"`
-	Currency        string         `db:"currency"`
-	Notes           sql.NullString `db:"notes"`
-	Status          string         `db:"status"`
-	CreatedBy       sql.NullString `db:"created_by"`
-	UpdatedBy       sql.NullString `db:"updated_by"`
-	CreatedAt       time.Time      `db:"created_at"`
-	UpdatedAt       time.Time      `db:"updated_at"`
+	ID              string           `db:"id"`
+	WorkspaceID     string           `db:"workspace_id"`
+	CategoryCode    string           `db:"category_code"`
+	Title           string           `db:"title"`
+	DocumentDate    sql.NullTime     `db:"document_date"`
+	DueDate         sql.NullTime     `db:"due_date"`
+	Issuer          sql.NullString   `db:"issuer"`
+	ReferenceNumber sql.NullString   `db:"reference_number"`
+	AmountCents     sql.NullInt64    `db:"amount_cents"`
+	Currency        string           `db:"currency"`
+	Notes           sql.NullString   `db:"notes"`
+	ExtraFields     extraFieldsJSONB `db:"extra_fields"`
+	Status          string           `db:"status"`
+	CreatedBy       sql.NullString   `db:"created_by"`
+	UpdatedBy       sql.NullString   `db:"updated_by"`
+	CreatedAt       time.Time        `db:"created_at"`
+	UpdatedAt       time.Time        `db:"updated_at"`
 }
 
 func (r documentRow) toEntity() entities.Document {
@@ -53,6 +54,7 @@ func (r documentRow) toEntity() entities.Document {
 		Status:       r.Status,
 		CreatedAt:    r.CreatedAt,
 		UpdatedAt:    r.UpdatedAt,
+		ExtraFields:  entities.ExtraFields(r.ExtraFields),
 	}
 	if r.DocumentDate.Valid {
 		t := r.DocumentDate.Time
@@ -152,7 +154,8 @@ func (r *DocumentRepositoryAdapter) List(ctx context.Context, workspaceID string
 
 	listQ := fmt.Sprintf(`
 		SELECT id, workspace_id, category_code, title, document_date, due_date, issuer,
-		       reference_number, amount_cents, currency, notes, status, created_by, updated_by, created_at, updated_at
+		       reference_number, amount_cents, currency, notes, extra_fields, status,
+		       created_by, updated_by, created_at, updated_at
 		FROM archive_documents
 		WHERE %s
 		ORDER BY COALESCE(document_date, created_at::date) DESC, created_at DESC
@@ -175,7 +178,8 @@ func (r *DocumentRepositoryAdapter) List(ctx context.Context, workspaceID string
 func (r *DocumentRepositoryAdapter) FindByID(ctx context.Context, workspaceID, documentID string) (*entities.Document, error) {
 	const q = `
 		SELECT id, workspace_id, category_code, title, document_date, due_date, issuer,
-		       reference_number, amount_cents, currency, notes, status, created_by, updated_by, created_at, updated_at
+		       reference_number, amount_cents, currency, notes, extra_fields, status,
+		       created_by, updated_by, created_at, updated_at
 		FROM archive_documents
 		WHERE id = $1 AND workspace_id = $2
 		LIMIT 1`
@@ -197,16 +201,17 @@ func (r *DocumentRepositoryAdapter) Create(ctx context.Context, doc *entities.Do
 	const q = `
 		INSERT INTO archive_documents (
 			id, workspace_id, category_code, title, document_date, due_date, issuer,
-			reference_number, amount_cents, currency, notes, status, created_by, updated_by, created_at, updated_at
+			reference_number, amount_cents, currency, notes, extra_fields, status,
+			created_by, updated_by, created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 		)`
 
 	_, err := r.db.ExecContext(ctx, q,
 		doc.ID, doc.WorkspaceID, doc.CategoryCode, doc.Title,
 		nullDate(doc.DocumentDate), nullDate(doc.DueDate),
 		nullStr(doc.Issuer), nullStr(doc.ReferenceNumber), nullInt64(doc.AmountCents),
-		doc.Currency, nullStr(doc.Notes), doc.Status,
+		doc.Currency, nullStr(doc.Notes), extraFieldsJSONB(doc.ExtraFields), doc.Status,
 		nullStr(doc.CreatedBy), nullStr(doc.UpdatedBy),
 		doc.CreatedAt, doc.UpdatedAt,
 	)
@@ -221,15 +226,15 @@ func (r *DocumentRepositoryAdapter) Update(ctx context.Context, doc *entities.Do
 	const q = `
 		UPDATE archive_documents SET
 			category_code = $2, title = $3, document_date = $4, due_date = $5, issuer = $6,
-			reference_number = $7, amount_cents = $8, currency = $9, notes = $10, status = $11,
-			updated_by = $12, updated_at = $13
-		WHERE id = $1 AND workspace_id = $14`
+			reference_number = $7, amount_cents = $8, currency = $9, notes = $10,
+			extra_fields = $11, status = $12, updated_by = $13, updated_at = $14
+		WHERE id = $1 AND workspace_id = $15`
 
 	res, err := r.db.ExecContext(ctx, q,
 		doc.ID, doc.CategoryCode, doc.Title,
 		nullDate(doc.DocumentDate), nullDate(doc.DueDate),
 		nullStr(doc.Issuer), nullStr(doc.ReferenceNumber), nullInt64(doc.AmountCents),
-		doc.Currency, nullStr(doc.Notes), doc.Status,
+		doc.Currency, nullStr(doc.Notes), extraFieldsJSONB(doc.ExtraFields), doc.Status,
 		nullStr(doc.UpdatedBy), doc.UpdatedAt, doc.WorkspaceID,
 	)
 	if err != nil {

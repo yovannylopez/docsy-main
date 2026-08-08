@@ -206,6 +206,17 @@ func (s stubDeleteFileUC) Execute(_ context.Context, _, _, _, _ string) error {
 	return s.err
 }
 
+type stubSuggestOCRUC struct {
+	resp *dtos.OCRSuggestionResponse
+	err  error
+}
+
+func (s stubSuggestOCRUC) Execute(
+	_ context.Context, _, _, _ string, _ []byte,
+) (*dtos.OCRSuggestionResponse, error) {
+	return s.resp, s.err
+}
+
 func withUser(c echo.Context) {
 	c.Set("user", &authentities.User{ID: "user-1"})
 }

@@ -481,6 +481,52 @@ select {
   background: #6366f1;
 }
 
+.extra-fields-badges:empty + #extra-fields-empty {
+  display: block;
+}
+
+.extra-field-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: color-mix(in srgb, var(--primary, #0f766e) 10%, transparent);
+  color: var(--foreground, #111827);
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.extra-field-badge-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 18rem;
+}
+
+.extra-field-badge-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground, #6b7280);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.extra-field-badge-remove:hover {
+  color: var(--destructive, #dc2626);
+  background: color-mix(in srgb, var(--destructive, #dc2626) 12%, transparent);
+}
+
 .file-type-icon {
   display: inline-flex;
   align-items: center;

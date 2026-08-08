@@ -323,7 +323,9 @@ func mapArchiveAPIError(c echo.Context, err error) error {
 		errors.Is(err, domainerrors.ErrCannotInviteSelf),
 		errors.Is(err, domainerrors.ErrAlreadyMember),
 		errors.Is(err, domainerrors.ErrCannotModifyOwner),
-		errors.Is(err, domainerrors.ErrHouseholdOnlyInvite):
+		errors.Is(err, domainerrors.ErrHouseholdOnlyInvite),
+		errors.Is(err, domainerrors.ErrTooManyExtraFields),
+		errors.Is(err, domainerrors.ErrInvalidExtraField):
 		return responses.BadRequest(c, err.Error())
 	case errors.Is(err, domainerrors.ErrDocumentNotFound),
 		errors.Is(err, domainerrors.ErrWorkspaceNotFound),

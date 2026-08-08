@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -39,6 +40,10 @@ const (
 	msgFileUploadError       = "No se pudo subir el archivo. Verifica el tipo y el tamaño."
 	msgFileRequiredCreate    = "Debes adjuntar un archivo para crear el documento."
 	msgCannotDeleteLastFile  = "El documento debe conservar al menos un archivo adjunto."
+	msgOCRUnavailable        = "El análisis OCR no está disponible. Instala Tesseract o actívalo en la configuración."
+	msgOCRUnsupported        = "Este tipo de archivo no admite OCR. Usa PDF o imagen (JPG, PNG, TIFF, WebP, GIF)."
+	msgOCRNoText             = "No se pudo leer texto del archivo. Prueba con una imagen más nítida o un PDF con texto."
+	msgOCRFailed             = "No se pudo analizar el archivo con OCR. Intenta de nuevo."
 	msgInvalidAmount         = "el monto no es válido"
 	msgInvalidDate           = "hay una fecha con formato inválido (usa AAAA-MM-DD)"
 	msgWorkspacesLoadError   = "No se pudieron cargar tus archivos. Intenta de nuevo."
@@ -198,6 +203,8 @@ type DocumentForm struct {
 	Amount          string
 	Currency        string
 	Notes           string
+	ExtraFields     []dtos.ExtraFieldDTO
+	ExtraFieldsJSON string
 	GeneralError    string
 }
 
@@ -220,6 +227,7 @@ type ArchivePageHandler struct {
 	listFilesUC       ports.ListDocumentFilesService
 	downloadFileUC    ports.DownloadDocumentFileService
 	deleteFileUC      ports.DeleteDocumentFileService
+	suggestOCRUC      ports.SuggestDocumentFieldsService
 }
 
 // NewArchivePageHandler creates the page handler.
@@ -241,6 +249,7 @@ func NewArchivePageHandler(
 	listFilesUC ports.ListDocumentFilesService,
 	downloadFileUC ports.DownloadDocumentFileService,
 	deleteFileUC ports.DeleteDocumentFileService,
+	suggestOCRUC ports.SuggestDocumentFieldsService,
 ) *ArchivePageHandler {
 	return &ArchivePageHandler{
 		ensurePersonalUC:  ensurePersonalUC,
@@ -260,6 +269,7 @@ func NewArchivePageHandler(
 		listFilesUC:       listFilesUC,
 		downloadFileUC:    downloadFileUC,
 		deleteFileUC:      deleteFileUC,
+		suggestOCRUC:      suggestOCRUC,
 	}
 }
 
@@ -718,6 +728,7 @@ func (h *ArchivePageHandler) renderForm(
 }
 
 func bindDocumentForm(c echo.Context, id string) DocumentForm {
+	extras, extrasJSON := parseExtraFieldsForm(c.FormValue("extra_fields"))
 	return DocumentForm{
 		ID:              id,
 		WorkspaceID:     workspaceIDParam(c),
@@ -730,7 +741,36 @@ func bindDocumentForm(c echo.Context, id string) DocumentForm {
 		Amount:          strings.TrimSpace(c.FormValue("amount")),
 		Currency:        strings.TrimSpace(c.FormValue("currency")),
 		Notes:           strings.TrimSpace(c.FormValue("notes")),
+		ExtraFields:     extras,
+		ExtraFieldsJSON: extrasJSON,
 	}
+}
+
+func parseExtraFieldsForm(raw string) ([]dtos.ExtraFieldDTO, string) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" || raw == "null" {
+		return nil, "[]"
+	}
+	var fields []dtos.ExtraFieldDTO
+	if err := json.Unmarshal([]byte(raw), &fields); err != nil {
+		return nil, "[]"
+	}
+	b, err := json.Marshal(fields)
+	if err != nil {
+		return fields, "[]"
+	}
+	return fields, string(b)
+}
+
+func marshalExtraFieldsJSON(fields []dtos.ExtraFieldDTO) string {
+	if len(fields) == 0 {
+		return "[]"
+	}
+	b, err := json.Marshal(fields)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
 }
 
 func formToCreateRequest(form DocumentForm) (*dtos.CreateDocumentRequest, error) {
@@ -761,6 +801,7 @@ func formToCreateRequest(form DocumentForm) (*dtos.CreateDocumentRequest, error)
 		AmountCents:     amount,
 		Currency:        currency,
 		Notes:           optionalNonEmpty(form.Notes),
+		ExtraFields:     form.ExtraFields,
 	}, nil
 }
 
@@ -799,6 +840,8 @@ func formToUpdateRequest(form DocumentForm) (*dtos.UpdateDocumentRequest, error)
 		ClearAmount:     form.Amount == "",
 		Currency:        &currency,
 		Notes:           &notes,
+		ExtraFields:     form.ExtraFields,
+		SetExtraFields:  true,
 	}
 	return req, nil
 }
@@ -829,6 +872,8 @@ func documentToForm(doc *dtos.DocumentResponse) DocumentForm {
 	if doc.Notes != nil {
 		form.Notes = *doc.Notes
 	}
+	form.ExtraFields = doc.ExtraFields
+	form.ExtraFieldsJSON = marshalExtraFieldsJSON(doc.ExtraFields)
 	return form
 }
 

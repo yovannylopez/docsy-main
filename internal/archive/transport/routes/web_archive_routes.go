@@ -43,6 +43,7 @@ func (wr *WebArchiveRoutes) Setup(e *echo.Echo) {
 	g.GET("/archivo/documentos", wr.pageHandler.ListDocuments, wr.webAuthMW.RequirePermission("archive.read"))
 	g.GET("/archivo/documentos/nuevo", wr.pageHandler.ShowCreate, wr.webAuthMW.RequirePermission("archive.write"))
 	g.POST("/archivo/documentos/nuevo", wr.pageHandler.SubmitCreate, wr.webAuthMW.RequirePermission("archive.write"))
+	g.POST("/archivo/documentos/ocr-sugerir", wr.pageHandler.SuggestOCR, wr.webAuthMW.RequirePermission("archive.write"))
 	g.GET("/archivo/documentos/:id/editar", wr.pageHandler.ShowEdit, wr.webAuthMW.RequirePermission("archive.write"))
 	g.POST("/archivo/documentos/:id/editar", wr.pageHandler.SubmitEdit, wr.webAuthMW.RequirePermission("archive.write"))
 	g.POST("/archivo/documentos/:id/archivos", wr.pageHandler.UploadDocumentFile, wr.webAuthMW.RequirePermission("archive.write"))

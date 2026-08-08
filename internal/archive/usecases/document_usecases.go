@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/google/uuid"
 
@@ -64,6 +65,13 @@ func (a *documentAccess) workspaceForUser(
 	return toWorkspaceResponse(ws, member.Role), nil
 }
 
+const (
+	maxExtraFields    = 20
+	maxExtraKeyLen    = 64
+	maxExtraLabelLen  = 80
+	maxExtraValueLen  = 255
+)
+
 func toDocumentResponse(doc *entities.Document, label string) *dtos.DocumentResponse {
 	return &dtos.DocumentResponse{
 		ID:              doc.ID,
@@ -78,10 +86,62 @@ func toDocumentResponse(doc *entities.Document, label string) *dtos.DocumentResp
 		AmountCents:     doc.AmountCents,
 		Currency:        doc.Currency,
 		Notes:           doc.Notes,
+		ExtraFields:     extraFieldsToDTO(doc.ExtraFields),
 		Status:          doc.Status,
 		CreatedAt:       doc.CreatedAt,
 		UpdatedAt:       doc.UpdatedAt,
 	}
+}
+
+func extraFieldsToDTO(in entities.ExtraFields) []dtos.ExtraFieldDTO {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]dtos.ExtraFieldDTO, 0, len(in))
+	for _, f := range in {
+		out = append(out, dtos.ExtraFieldDTO{Key: f.Key, Label: f.Label, Value: f.Value})
+	}
+	return out
+}
+
+func normalizeExtraFields(in []dtos.ExtraFieldDTO) (entities.ExtraFields, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+	if len(in) > maxExtraFields {
+		return nil, domainerrors.ErrTooManyExtraFields
+	}
+	out := make(entities.ExtraFields, 0, len(in))
+	seen := make(map[string]struct{}, len(in))
+	for _, f := range in {
+		key := strings.TrimSpace(f.Key)
+		label := strings.TrimSpace(f.Label)
+		value := strings.TrimSpace(f.Value)
+		if key == "" || label == "" || value == "" {
+			continue
+		}
+		if len(key) > maxExtraKeyLen || len(label) > maxExtraLabelLen || len(value) > maxExtraValueLen {
+			return nil, domainerrors.ErrInvalidExtraField
+		}
+		for _, r := range key {
+			if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
+				continue
+			}
+			return nil, domainerrors.ErrInvalidExtraField
+		}
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, entities.ExtraField{Key: key, Label: label, Value: value})
+		if len(out) > maxExtraFields {
+			return nil, domainerrors.ErrTooManyExtraFields
+		}
+	}
+	if len(out) == 0 {
+		return nil, nil
+	}
+	return out, nil
 }
 
 func (a *documentAccess) categoryLabels(ctx context.Context) (map[string]string, error) {
@@ -156,6 +216,10 @@ func (uc *CreateDocumentUseCase) Execute(ctx context.Context, userID string, req
 	if currency == "" {
 		currency = entities.DefaultDocumentCurrency
 	}
+	extras, err := normalizeExtraFields(req.ExtraFields)
+	if err != nil {
+		return nil, err
+	}
 
 	now := time.Now().UTC()
 	createdBy := userID
@@ -171,6 +235,7 @@ func (uc *CreateDocumentUseCase) Execute(ctx context.Context, userID string, req
 		AmountCents:     req.AmountCents,
 		Currency:        currency,
 		Notes:           optionalTrimmed(req.Notes),
+		ExtraFields:     extras,
 		Status:          entities.DocumentStatusActive,
 		CreatedBy:       &createdBy,
 		UpdatedBy:       &createdBy,
@@ -314,7 +379,7 @@ func (uc *UpdateDocumentUseCase) Execute(
 	if documentID == "" {
 		return nil, domainerrors.ErrDocumentIDRequired
 	}
-	if workspaceID == "" && req != nil {
+	if workspaceID == "" {
 		workspaceID = req.WorkspaceID
 	}
 	ws, err := uc.access.workspaceForUser(ctx, userID, workspaceID, true)
@@ -328,25 +393,51 @@ func (uc *UpdateDocumentUseCase) Execute(
 	if doc == nil {
 		return nil, domainerrors.ErrDocumentNotFound
 	}
+	if err := applyDocumentUpdate(ctx, &uc.access, doc, req); err != nil {
+		return nil, err
+	}
 
+	now := time.Now().UTC()
+	doc.UpdatedAt = now
+	updatedBy := userID
+	doc.UpdatedBy = &updatedBy
+
+	if err := uc.access.docRepo.Update(ctx, doc); err != nil {
+		return nil, fmt.Errorf("update document: %w", err)
+	}
+	logArchiveAction(
+		ctx, uc.auditRepo, userID,
+		authdomain.AuditActionArchiveDocumentUpdated,
+		auditResourceDocument, doc.ID, "Archive document updated successfully",
+	)
+	labels, _ := uc.access.categoryLabels(ctx)
+	return toDocumentResponse(doc, labels[doc.CategoryCode]), nil
+}
+
+func applyDocumentUpdate(
+	ctx context.Context,
+	access *documentAccess,
+	doc *entities.Document,
+	req *dtos.UpdateDocumentRequest,
+) error {
 	if req.Title != nil {
 		title := strings.TrimSpace(*req.Title)
 		if title == "" {
-			return nil, domainerrors.ErrTitleRequired
+			return domainerrors.ErrTitleRequired
 		}
 		doc.Title = title
 	}
 	if req.CategoryCode != nil {
 		cat := strings.TrimSpace(*req.CategoryCode)
 		if cat == "" {
-			return nil, domainerrors.ErrCategoryRequired
+			return domainerrors.ErrCategoryRequired
 		}
-		ok, cErr := uc.access.docRepo.CategoryExists(ctx, cat)
+		ok, cErr := access.docRepo.CategoryExists(ctx, cat)
 		if cErr != nil {
-			return nil, cErr
+			return cErr
 		}
 		if !ok {
-			return nil, domainerrors.ErrInvalidCategory
+			return domainerrors.ErrInvalidCategory
 		}
 		doc.CategoryCode = cat
 	}
@@ -378,22 +469,14 @@ func (uc *UpdateDocumentUseCase) Execute(
 	if req.Notes != nil {
 		doc.Notes = optionalTrimmed(req.Notes)
 	}
-
-	now := time.Now().UTC()
-	doc.UpdatedAt = now
-	updatedBy := userID
-	doc.UpdatedBy = &updatedBy
-
-	if err := uc.access.docRepo.Update(ctx, doc); err != nil {
-		return nil, fmt.Errorf("update document: %w", err)
+	if req.SetExtraFields {
+		extras, nErr := normalizeExtraFields(req.ExtraFields)
+		if nErr != nil {
+			return nErr
+		}
+		doc.ExtraFields = extras
 	}
-	logArchiveAction(
-		ctx, uc.auditRepo, userID,
-		authdomain.AuditActionArchiveDocumentUpdated,
-		auditResourceDocument, doc.ID, "Archive document updated successfully",
-	)
-	labels, _ := uc.access.categoryLabels(ctx)
-	return toDocumentResponse(doc, labels[doc.CategoryCode]), nil
+	return nil
 }
 
 // ArchiveDocumentUseCase soft-archives a document.

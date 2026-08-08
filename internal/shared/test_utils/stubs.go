@@ -147,6 +147,14 @@ func newTestConfigs() TestConfigs {
 		MaxFileSize:  DefaultMaxFileSize,
 		QuotaBytes:   int64(constants.DefaultStorageQuotaBytes),
 	}
+	ocrConfig := sharedConfig.OCRConfig{
+		Enabled:      true,
+		TesseractBin: "tesseract",
+		PDFToTextBin: "pdftotext",
+		PDFToPPMBin:  "pdftoppm",
+		Lang:         "spa+eng",
+		Timeout:      30 * time.Second,
+	}
 
 	return TestConfigs{
 		ValidCoreConfig: &sharedConfig.CoreConfig{
@@ -157,6 +165,7 @@ func newTestConfigs() TestConfigs {
 			},
 			DBPool:  dbPoolConfig,
 			Storage: storageConfig,
+			OCR:     ocrConfig,
 		},
 		InvalidCoreConfig: &sharedConfig.CoreConfig{
 			BaseConfig: pkgConfig.BaseConfig{
@@ -189,6 +198,7 @@ func newTestConfigs() TestConfigs {
 				RetryDelay:      MinimalRetryDelay * time.Millisecond,
 			},
 			Storage: storageConfig,
+			OCR:     ocrConfig,
 		},
 		DevelopmentConfig: &sharedConfig.CoreConfig{
 			BaseConfig: pkgConfig.BaseConfig{
@@ -207,6 +217,7 @@ func newTestConfigs() TestConfigs {
 				RetryDelay:      DevelopmentRetryDelay * time.Millisecond,
 			},
 			Storage: storageConfig,
+			OCR:     ocrConfig,
 		},
 		ProductionConfig: &sharedConfig.CoreConfig{
 			BaseConfig: pkgConfig.BaseConfig{
@@ -225,6 +236,7 @@ func newTestConfigs() TestConfigs {
 				RetryDelay:      ProductionRetryDelay * time.Second,
 			},
 			Storage: storageConfig,
+			OCR:     ocrConfig,
 		},
 		MinimalConfig: &sharedConfig.CoreConfig{
 			BaseConfig: pkgConfig.BaseConfig{
@@ -248,6 +260,7 @@ func newTestConfigs() TestConfigs {
 				RetryDelay:      MinimalRetryDelay * time.Millisecond,
 			},
 			Storage: storageConfig,
+			OCR:     ocrConfig,
 		},
 		DatabaseConfig: dbConfig,
 		ServerConfig:   serverConfig,

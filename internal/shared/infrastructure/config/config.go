@@ -21,6 +21,16 @@ type StorageConfig struct {
 	QuotaBytes int64 `json:"quota_bytes"`
 }
 
+// OCRConfig configures local Tesseract OCR for archive field suggestions (SDD 012).
+type OCRConfig struct {
+	Enabled      bool          `json:"enabled"`
+	TesseractBin string        `json:"tesseract_bin"`
+	PDFToTextBin string        `json:"pdftotext_bin"`
+	PDFToPPMBin  string        `json:"pdftoppm_bin"`
+	Lang         string        `json:"lang"`
+	Timeout      time.Duration `json:"timeout"`
+}
+
 // RedisConfig configures distributed rate limiting (optional).
 // If URL is empty, an in-memory limiter is used.
 type RedisConfig struct {
@@ -66,6 +76,7 @@ type DBPoolConfig struct {
 type CoreConfig struct {
 	config.BaseConfig
 	Storage StorageConfig `json:"storage"`
+	OCR     OCRConfig     `json:"ocr"`
 	DBPool  DBPoolConfig  `json:"db_pool"`
 	Redis   RedisConfig   `json:"redis"`
 	LDAP    LDAPConfig    `json:"ldap"`
@@ -94,6 +105,14 @@ func NewCoreConfig(envFile string) (*CoreConfig, error) {
 				"STORAGE_QUOTA_BYTES",
 				int64(constants.DefaultStorageQuotaBytes),
 			),
+		},
+		OCR: OCRConfig{
+			Enabled:      config.GetBoolEnv("OCR_ENABLED", true),
+			TesseractBin: config.GetEnv("OCR_TESSERACT_BIN", "tesseract"),
+			PDFToTextBin: config.GetEnv("OCR_PDFTOTEXT_BIN", "pdftotext"),
+			PDFToPPMBin:  config.GetEnv("OCR_PDFTOPPM_BIN", "pdftoppm"),
+			Lang:         config.GetEnv("OCR_LANG", "spa+eng"),
+			Timeout:      time.Duration(config.GetIntEnv("OCR_TIMEOUT_SECS", 30)) * time.Second, //nolint:mnd
 		},
 		DBPool: getDBPoolConfig(),
 		Redis: RedisConfig{

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/yovannylopez/docsy-main/internal/archive/domain/dtos"
+	domainerrors "github.com/yovannylopez/docsy-main/internal/archive/domain/errors"
 	authentities "github.com/yovannylopez/docsy-main/internal/auth/domain/entities"
 	"github.com/yovannylopez/docsy-main/internal/shared/infrastructure/templates"
 )
@@ -54,6 +57,7 @@ func newTestPageHandler() *ArchivePageHandler {
 			Data: []byte("%PDF"),
 		}},
 		stubDeleteFileUC{},
+		stubSuggestOCRUC{resp: &dtos.OCRSuggestionResponse{Title: "Sugerido", Amount: "1000"}},
 	)
 }
 
@@ -119,6 +123,65 @@ func TestArchivePageHandler_ShowCreate(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "category_code")
 	assert.Contains(t, rec.Body.String(), "Servicios públicos")
+	assert.Contains(t, rec.Body.String(), "Analizar con OCR")
+}
+
+func TestArchivePageHandler_SuggestOCR_OK(t *testing.T) {
+	h := newTestPageHandler()
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	part, err := w.CreateFormFile("file", "a.png")
+	require.NoError(t, err)
+	_, err = part.Write([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A})
+	require.NoError(t, err)
+	require.NoError(t, w.Close())
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/archivo/documentos/ocr-sugerir", &body)
+	req.Header.Set(echo.HeaderContentType, w.FormDataContentType())
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.Set("user", &authentities.User{ID: "u1"})
+
+	err = h.SuggestOCR(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Sugerido")
+}
+
+func TestArchivePageHandler_SuggestOCR_MissingFile(t *testing.T) {
+	h := newTestPageHandler()
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/archivo/documentos/ocr-sugerir", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.Set("user", &authentities.User{ID: "u1"})
+
+	err := h.SuggestOCR(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+}
+
+func TestArchivePageHandler_SuggestOCR_Unavailable(t *testing.T) {
+	h := newTestPageHandler()
+	h.suggestOCRUC = stubSuggestOCRUC{err: domainerrors.ErrOCRUnavailable}
+	e := echo.New()
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	part, err := w.CreateFormFile("file", "a.png")
+	require.NoError(t, err)
+	_, _ = part.Write([]byte{0x89, 0x50, 0x4E, 0x47})
+	require.NoError(t, w.Close())
+	req := httptest.NewRequest(http.MethodPost, "/archivo/documentos/ocr-sugerir", &body)
+	req.Header.Set(echo.HeaderContentType, w.FormDataContentType())
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.Set("user", &authentities.User{ID: "u1"})
+
+	err = h.SuggestOCR(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	assert.Contains(t, rec.Body.String(), "OCR")
 }
 
 func TestPreviewKind(t *testing.T) {

@@ -14,6 +14,7 @@ import (
 
 	domainerrors "github.com/yovannylopez/docsy-main/internal/archive/domain/errors"
 	weblayout "github.com/yovannylopez/docsy-main/internal/shared/transport/web"
+	"github.com/yovannylopez/docsy-main/pkg/responses"
 )
 
 // UploadDocumentFile handles POST /archivo/documentos/:id/archivos
@@ -252,5 +253,63 @@ func mapFileFormError(err error) string {
 		return err.Error()
 	default:
 		return msgFileUploadError
+	}
+}
+
+// SuggestOCR handles POST /archivo/documentos/ocr-sugerir (multipart file → JSON suggestions).
+func (h *ArchivePageHandler) SuggestOCR(c echo.Context) error {
+	userID := weblayout.CurrentUserID(c)
+	if userID == "" {
+		return responses.Unauthorized(c, "User not authenticated")
+	}
+	if h.suggestOCRUC == nil {
+		return responses.UnprocessableEntity(c, msgOCRUnavailable)
+	}
+
+	header, err := c.FormFile("file")
+	if err != nil {
+		return responses.UnprocessableEntity(c, msgFileRequiredCreate)
+	}
+	src, err := header.Open()
+	if err != nil {
+		return responses.UnprocessableEntity(c, msgFileUploadError)
+	}
+	defer func() { _ = src.Close() }()
+
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return responses.UnprocessableEntity(c, msgFileUploadError)
+	}
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = http.DetectContentType(data)
+	}
+
+	suggestion, err := h.suggestOCRUC.Execute(
+		c.Request().Context(), userID, header.Filename, contentType, data,
+	)
+	if err != nil {
+		return mapOCRSuggestError(c, err)
+	}
+	return responses.OK(c, suggestion, "ocr suggestions ready")
+}
+
+func mapOCRSuggestError(c echo.Context, err error) error {
+	switch {
+	case errors.Is(err, domainerrors.ErrOCRDisabled),
+		errors.Is(err, domainerrors.ErrOCRUnavailable):
+		return responses.UnprocessableEntity(c, msgOCRUnavailable)
+	case errors.Is(err, domainerrors.ErrOCRUnsupportedType):
+		return responses.UnprocessableEntity(c, msgOCRUnsupported)
+	case errors.Is(err, domainerrors.ErrOCRNoText):
+		return responses.UnprocessableEntity(c, msgOCRNoText)
+	case errors.Is(err, domainerrors.ErrFileRequired),
+		errors.Is(err, domainerrors.ErrFileTooLarge),
+		errors.Is(err, domainerrors.ErrInvalidContentType):
+		return responses.UnprocessableEntity(c, err.Error())
+	case errors.Is(err, domainerrors.ErrOCRFailed):
+		return responses.UnprocessableEntity(c, msgOCRFailed)
+	default:
+		return responses.InternalError(c, msgOCRFailed)
 	}
 }
