@@ -67,7 +67,10 @@ func NewArchiveContainer(
 	createDocUC := usecases.NewCreateDocumentUseCase(wsRepo, ensureUC, docRepo, auditRepo)
 	updateDocUC := usecases.NewUpdateDocumentUseCase(wsRepo, ensureUC, docRepo, auditRepo)
 	archiveDocUC := usecases.NewArchiveDocumentUseCase(wsRepo, ensureUC, docRepo, auditRepo)
-	listCatsUC := usecases.NewListCategoriesUseCase(docRepo)
+	listCatsUC := usecases.NewListCategoriesUseCase(wsRepo, ensureUC, docRepo)
+	createCatUC := usecases.NewCreateCategoryUseCase(wsRepo, ensureUC, docRepo, auditRepo)
+	updateCatUC := usecases.NewUpdateCategoryUseCase(wsRepo, ensureUC, docRepo, auditRepo)
+	deactivateCatUC := usecases.NewDeactivateCategoryUseCase(wsRepo, ensureUC, docRepo, auditRepo)
 
 	uploadFileUC := usecases.NewUploadDocumentFileUseCase(
 		wsRepo, ensureUC, docRepo, fileRepo, docStorage, storageCfg.MaxFileSize, auditRepo,
@@ -88,11 +91,13 @@ func NewArchiveContainer(
 			ensureUC, listWorkspacesUC, createHouseholdUC, listMembersUC, inviteMemberUC,
 			updateMemberRoleUC, removeMemberUC,
 			listDocsUC, getDocUC, createDocUC, updateDocUC, archiveDocUC, listCatsUC,
+			createCatUC, updateCatUC, deactivateCatUC,
 			uploadFileUC, listFilesUC, downloadFileUC, deleteFileUC,
 		),
 		PageHandler: handlers.NewArchivePageHandler(
 			ensureUC, listWorkspacesUC, createHouseholdUC, listMembersUC, inviteMemberUC, removeMemberUC,
 			listDocsUC, listFoldersUC, getDocUC, createDocUC, createWithFileUC, updateDocUC, listCatsUC,
+			createCatUC, updateCatUC, deactivateCatUC,
 			uploadFileUC, listFilesUC, downloadFileUC, deleteFileUC, suggestOCRUC,
 		),
 	}, nil

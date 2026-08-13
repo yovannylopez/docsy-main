@@ -258,7 +258,7 @@ func TestGetBaseConfig_DefaultValues(t *testing.T) {
 	assert.Equal(t, "5432", config.Database.Port)
 	assert.Equal(t, "postgres", config.Database.User)
 	assert.Equal(t, "", config.Database.Password)
-	assert.Equal(t, "go_boilerplate", config.Database.DBName)
+	assert.Equal(t, "docsy-main-db", config.Database.DBName)
 	assert.Equal(t, "disable", config.Database.SSLMode)
 
 	assert.Equal(t, "", config.Auth.JWTSecret)

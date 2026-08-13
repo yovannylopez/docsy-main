@@ -48,6 +48,9 @@ func newTestPageHandler() *ArchivePageHandler {
 		},
 		stubUpdateDocUC{doc: &dtos.DocumentResponse{ID: "d-1", Title: "Gas editado"}},
 		stubListCatsUC{cats: []dtos.DocumentCategoryResponse{{Code: categoryCodeUtilities, LabelES: "Servicios públicos"}}},
+		stubCreateCatUC{cat: &dtos.DocumentCategoryResponse{Code: "c_1", LabelES: "Custom"}},
+		stubUpdateCatUC{cat: &dtos.DocumentCategoryResponse{Code: "c_1", LabelES: "Custom 2"}},
+		stubDeactivateCatUC{},
 		stubUploadFileUC{file: &dtos.DocumentFileResponse{ID: "f-1", OriginalName: "a.pdf"}},
 		stubListFilesUC{files: []dtos.DocumentFileResponse{{
 			ID: "f-1", OriginalName: "factura.pdf", ContentType: "application/pdf", SizeBytes: 1024, UploadedAt: now,
@@ -79,11 +82,29 @@ func renderPage(t *testing.T, path string, handle func(echo.Context) error) *htt
 	return rec
 }
 
-func TestArchivePageHandler_ShowArchive(t *testing.T) {
+func TestArchivePageHandler_ShowArchive_RedirectsToPersonalDocs(t *testing.T) {
+	renderer, err := templates.NewRenderer()
+	require.NoError(t, err)
+
 	h := newTestPageHandler()
-	rec := renderPage(t, "/archivo", h.ShowArchive)
+	e := echo.New()
+	e.Renderer = renderer
+	req := httptest.NewRequest(http.MethodGet, "/archivo", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.Set("user", &authentities.User{ID: "u1", Email: "a@b.com", FirstName: "Ana"})
+
+	err = h.ShowArchive(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusFound, rec.Code)
+	assert.Contains(t, rec.Header().Get("Location"), "/archivo/documentos?workspace_id=ws-1")
+}
+
+func TestArchivePageHandler_ShowArchive_Hub(t *testing.T) {
+	h := newTestPageHandler()
+	rec := renderPage(t, "/archivo?hub=1", h.ShowArchive)
 	assert.Contains(t, rec.Body.String(), "Mi archivo")
-	assert.Contains(t, rec.Body.String(), "personal")
+	assert.Contains(t, rec.Body.String(), "Crear hogar")
 	assert.Contains(t, rec.Body.String(), "/archivo/documentos")
 }
 

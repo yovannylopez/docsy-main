@@ -15,8 +15,17 @@ type DocumentRepository interface {
 	Update(ctx context.Context, doc *entities.Document) error
 	// Delete hard-deletes a document (attachments cascade). Used to compensate failed create+attach.
 	Delete(ctx context.Context, workspaceID, documentID string) error
-	CategoryExists(ctx context.Context, code string) (bool, error)
-	ListCategories(ctx context.Context) ([]entities.DocumentCategory, error)
+	// CategoryExists reports whether code is an active system category or an active custom one for the workspace.
+	CategoryExists(ctx context.Context, workspaceID, code string) (bool, error)
+	// ListCategories returns active system categories plus custom ones for the workspace.
+	ListCategories(ctx context.Context, workspaceID string) ([]entities.DocumentCategory, error)
+	FindCategory(ctx context.Context, workspaceID, code string) (*entities.DocumentCategory, error)
+	CreateCategory(ctx context.Context, cat *entities.DocumentCategory) error
+	UpdateCategory(ctx context.Context, cat *entities.DocumentCategory) error
+	// UpdateSystemCategory updates the label of an active system category (global seed).
+	UpdateSystemCategory(ctx context.Context, cat *entities.DocumentCategory) error
+	DeactivateCategory(ctx context.Context, workspaceID, code string) error
+	CountCustomCategories(ctx context.Context, workspaceID string) (int, error)
 	// CountByCategory returns document counts keyed by category_code for a workspace.
 	CountByCategory(ctx context.Context, workspaceID string, status string) (map[string]int, error)
 }
@@ -57,9 +66,29 @@ type ArchiveDocumentService interface {
 	Execute(ctx context.Context, userID, workspaceID, documentID string) (*dtos.DocumentResponse, error)
 }
 
-// ListCategoriesService lists active document categories.
+// ListCategoriesService lists active document categories for a workspace (system + custom).
 type ListCategoriesService interface {
-	Execute(ctx context.Context) ([]dtos.DocumentCategoryResponse, error)
+	Execute(ctx context.Context, userID, workspaceID string) ([]dtos.DocumentCategoryResponse, error)
+}
+
+// CreateCategoryService creates a flat custom category in a workspace.
+type CreateCategoryService interface {
+	Execute(ctx context.Context, userID string, req *dtos.CreateCategoryRequest) (*dtos.DocumentCategoryResponse, error)
+}
+
+// UpdateCategoryService renames a category (custom, or system when allowSystemEdit).
+type UpdateCategoryService interface {
+	Execute(
+		ctx context.Context,
+		userID, workspaceID, code string,
+		req *dtos.UpdateCategoryRequest,
+		allowSystemEdit bool,
+	) (*dtos.DocumentCategoryResponse, error)
+}
+
+// DeactivateCategoryService soft-deactivates a custom category when unused.
+type DeactivateCategoryService interface {
+	Execute(ctx context.Context, userID, workspaceID, code string) error
 }
 
 // ListCategoryFoldersService lists category folders with document counts for a workspace.

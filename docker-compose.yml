@@ -17,13 +17,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: go_boilerplate
+      POSTGRES_DB: docsy-main-db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d go_boilerplate"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d docsy-main-db"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -65,7 +65,7 @@ services:
       DB_PORT: "5432"
       DB_USER: postgres
       DB_PASSWORD: postgres
-      DB_NAME: go_boilerplate
+      DB_NAME: docsy-main-db
       DB_SSLMODE: disable
       JWT_SECRET: change-this-to-a-long-random-secret
       TOKEN_EXPIRATION: 24h

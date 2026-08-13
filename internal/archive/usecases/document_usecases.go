@@ -66,10 +66,10 @@ func (a *documentAccess) workspaceForUser(
 }
 
 const (
-	maxExtraFields    = 20
-	maxExtraKeyLen    = 64
-	maxExtraLabelLen  = 80
-	maxExtraValueLen  = 255
+	maxExtraFields   = 20
+	maxExtraKeyLen   = 64
+	maxExtraLabelLen = 80
+	maxExtraValueLen = 255
 )
 
 func toDocumentResponse(doc *entities.Document, label string) *dtos.DocumentResponse {
@@ -144,8 +144,8 @@ func normalizeExtraFields(in []dtos.ExtraFieldDTO) (entities.ExtraFields, error)
 	return out, nil
 }
 
-func (a *documentAccess) categoryLabels(ctx context.Context) (map[string]string, error) {
-	cats, err := a.docRepo.ListCategories(ctx)
+func (a *documentAccess) categoryLabels(ctx context.Context, workspaceID string) (map[string]string, error) {
+	cats, err := a.docRepo.ListCategories(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (uc *CreateDocumentUseCase) Execute(ctx context.Context, userID string, req
 	if category == "" {
 		return nil, domainerrors.ErrCategoryRequired
 	}
-	ok, err := uc.access.docRepo.CategoryExists(ctx, category)
+	ok, err := uc.access.docRepo.CategoryExists(ctx, ws.ID, category)
 	if err != nil {
 		return nil, fmt.Errorf("validate category: %w", err)
 	}
@@ -250,7 +250,7 @@ func (uc *CreateDocumentUseCase) Execute(ctx context.Context, userID string, req
 		authdomain.AuditActionArchiveDocumentCreated,
 		auditResourceDocument, doc.ID, "Archive document created successfully",
 	)
-	labels, _ := uc.access.categoryLabels(ctx)
+	labels, _ := uc.access.categoryLabels(ctx, ws.ID)
 	return toDocumentResponse(doc, labels[doc.CategoryCode]), nil
 }
 
@@ -283,7 +283,7 @@ func (uc *ListDocumentsUseCase) Execute(ctx context.Context, userID string, filt
 	if err != nil {
 		return nil, 0, err
 	}
-	labels, err := uc.access.categoryLabels(ctx)
+	labels, err := uc.access.categoryLabels(ctx, ws.ID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -343,7 +343,7 @@ func (uc *GetDocumentUseCase) Execute(ctx context.Context, userID, workspaceID, 
 	if doc == nil {
 		return nil, domainerrors.ErrDocumentNotFound
 	}
-	labels, _ := uc.access.categoryLabels(ctx)
+	labels, _ := uc.access.categoryLabels(ctx, ws.ID)
 	return toDocumentResponse(doc, labels[doc.CategoryCode]), nil
 }
 
@@ -410,7 +410,7 @@ func (uc *UpdateDocumentUseCase) Execute(
 		authdomain.AuditActionArchiveDocumentUpdated,
 		auditResourceDocument, doc.ID, "Archive document updated successfully",
 	)
-	labels, _ := uc.access.categoryLabels(ctx)
+	labels, _ := uc.access.categoryLabels(ctx, ws.ID)
 	return toDocumentResponse(doc, labels[doc.CategoryCode]), nil
 }
 
@@ -432,7 +432,7 @@ func applyDocumentUpdate(
 		if cat == "" {
 			return domainerrors.ErrCategoryRequired
 		}
-		ok, cErr := access.docRepo.CategoryExists(ctx, cat)
+		ok, cErr := access.docRepo.CategoryExists(ctx, doc.WorkspaceID, cat)
 		if cErr != nil {
 			return cErr
 		}
@@ -528,35 +528,8 @@ func (uc *ArchiveDocumentUseCase) Execute(ctx context.Context, userID, workspace
 		authdomain.AuditActionArchiveDocumentArchived,
 		auditResourceDocument, doc.ID, "Archive document archived successfully",
 	)
-	labels, _ := uc.access.categoryLabels(ctx)
+	labels, _ := uc.access.categoryLabels(ctx, ws.ID)
 	return toDocumentResponse(doc, labels[doc.CategoryCode]), nil
-}
-
-// ListCategoriesUseCase lists document categories.
-type ListCategoriesUseCase struct {
-	docRepo ports.DocumentRepository
-}
-
-// NewListCategoriesUseCase creates the use case.
-func NewListCategoriesUseCase(docRepo ports.DocumentRepository) *ListCategoriesUseCase {
-	return &ListCategoriesUseCase{docRepo: docRepo}
-}
-
-// Execute returns active categories.
-func (uc *ListCategoriesUseCase) Execute(ctx context.Context) ([]dtos.DocumentCategoryResponse, error) {
-	cats, err := uc.docRepo.ListCategories(ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]dtos.DocumentCategoryResponse, 0, len(cats))
-	for _, c := range cats {
-		out = append(out, dtos.DocumentCategoryResponse{
-			Code:      c.Code,
-			LabelES:   c.LabelES,
-			SortOrder: c.SortOrder,
-		})
-	}
-	return out, nil
 }
 
 // ListCategoryFoldersUseCase lists virtual category folders with document counts.
@@ -583,7 +556,7 @@ func (uc *ListCategoryFoldersUseCase) Execute(
 	if err != nil {
 		return nil, err
 	}
-	cats, err := uc.access.docRepo.ListCategories(ctx)
+	cats, err := uc.access.docRepo.ListCategories(ctx, ws.ID)
 	if err != nil {
 		return nil, fmt.Errorf("list categories: %w", err)
 	}
@@ -598,6 +571,7 @@ func (uc *ListCategoryFoldersUseCase) Execute(
 			LabelES:   c.LabelES,
 			SortOrder: c.SortOrder,
 			Count:     counts[c.Code],
+			IsSystem:  c.IsSystem,
 		})
 	}
 	return out, nil

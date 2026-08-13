@@ -44,7 +44,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: go_boilerplate_test
+          POSTGRES_DB: docsy-main-db-test
         ports:
           - 5432:5432
         options: >-
@@ -60,7 +60,7 @@ jobs:
       DB_PORT: "5432"
       DB_USER: postgres
       DB_PASSWORD: postgres
-      DB_NAME: go_boilerplate_test
+      DB_NAME: docsy-main-db-test
       DB_SSLMODE: disable
       JWT_SECRET: ci-test-secret-key-not-for-production
 

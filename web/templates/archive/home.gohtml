@@ -1,54 +1,79 @@
 {{define "archive/home"}}
 {{template "base-head" .}}
 {{template "app-shell-start" .}}
-{{template "partials/form-header" .}}
 
-{{if .Error}}
-<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 dark:bg-red-950/30 dark:border-red-800">
-  <p class="text-sm text-red-700 dark:text-red-300">{{.Error}}</p>
-</div>
-{{end}}
-
-<div class="space-y-6">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <p class="text-muted-foreground text-sm">Selecciona un archivo para ver documentos o administra tu hogar compartido.</p>
-    <a href="/archivo/hogares/nuevo" class="btn btn-primary inline-flex rounded-md px-4 py-2 text-sm font-medium">
+<div class="files-browser w-full max-w-3xl mx-auto space-y-6">
+  <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">{{.Title}}</h1>
+      <p class="text-muted-foreground mt-1 text-sm sm:text-base">Empieza en tu archivo personal. Comparte un hogar cuando lo necesites.</p>
+    </div>
+    <a href="/archivo/hogares/nuevo" class="btn btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
       Crear hogar
     </a>
   </div>
 
-  {{if .Workspaces}}
-  <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-    {{range .Workspaces}}
-    <div class="bg-card rounded-lg border border-border p-6 space-y-4">
-      <div>
-        <p class="text-muted-foreground text-sm">{{.TypeLabel}}</p>
-        <h2 class="text-foreground text-xl font-semibold">{{.Name}}</h2>
-      </div>
-      <dl class="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <dt class="text-muted-foreground">Tu rol</dt>
-          <dd class="text-foreground font-medium">{{.MemberRole}}</dd>
-        </div>
-      </dl>
-      <div class="flex flex-wrap gap-2">
-        <a href="{{.DocsURL}}" class="btn btn-primary inline-flex rounded-md px-4 py-2 text-sm font-medium">
-          Ver documentos
-        </a>
-        {{if .ShowMembers}}
-        <a href="{{.MembersURL}}" class="btn btn-secondary inline-flex rounded-md px-4 py-2 text-sm font-medium">
-          Gestionar miembros
-        </a>
-        {{end}}
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+
+  {{if .Personal}}
+  <a href="{{.Personal.DocsURL}}" class="bg-card border-border hover:border-primary/40 group block rounded-2xl border p-6 transition-colors sm:p-8">
+    <div class="flex items-start gap-4">
+      <span class="bg-primary/10 text-primary inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V6.75A2.25 2.25 0 014.5 4.5h4.172a2.25 2.25 0 011.591.659l.914.914a2.25 2.25 0 001.591.659H19.5a2.25 2.25 0 012.25 2.25v4.768" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75A2.25 2.25 0 014.5 15h15a2.25 2.25 0 012.25-2.25M2.25 12.75v6A2.25 2.25 0 004.5 21h15a2.25 2.25 0 002.25-2.25v-6" />
+        </svg>
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Tu espacio</p>
+        <h2 class="text-foreground mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{{.Personal.Name}}</h2>
+        <p class="text-muted-foreground mt-2 text-sm">Documentos privados: facturas, salud, identidad y más.</p>
+        <span class="text-primary mt-4 inline-flex items-center gap-1.5 text-sm font-semibold group-hover:underline">
+          Abrir documentos
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+        </span>
       </div>
     </div>
-    {{end}}
-  </div>
-  {{else}}
-  <div class="bg-card rounded-lg border border-border p-8">
-    <p class="text-muted-foreground text-sm">No hay archivos disponibles.</p>
-  </div>
+  </a>
   {{end}}
+
+  <section class="space-y-3" aria-labelledby="households-heading">
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 id="households-heading" class="text-foreground text-sm font-semibold tracking-wide uppercase">Hogares compartidos</h2>
+      <span class="text-muted-foreground text-xs">{{len .Households}}</span>
+    </div>
+
+    {{if .Households}}
+    <ul class="bg-card border-border divide-border divide-y overflow-hidden rounded-2xl border">
+      {{range .Households}}
+      <li class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-foreground truncate font-medium">{{.Name}}</p>
+          <p class="text-muted-foreground text-xs">{{.TypeLabel}} · {{.MemberRole}}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="{{.DocsURL}}" class="btn btn-primary rounded-xl px-3 py-2 text-xs font-medium">Documentos</a>
+          {{if .ShowMembers}}
+          <a href="{{.MembersURL}}" class="btn btn-secondary rounded-xl px-3 py-2 text-xs font-medium">Miembros</a>
+          {{end}}
+        </div>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <div class="bg-card border-border rounded-2xl border border-dashed px-4 py-8 text-center">
+      <p class="text-muted-foreground text-sm">Todavía no compartes un hogar. Créalo cuando quieras invitar a tu familia.</p>
+      <a href="/archivo/hogares/nuevo" class="text-primary mt-3 inline-flex text-sm font-semibold hover:underline">Crear hogar</a>
+    </div>
+    {{end}}
+  </section>
 </div>
 
 {{template "app-shell-end" .}}

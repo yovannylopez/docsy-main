@@ -31,6 +31,9 @@ type ArchiveHandler struct {
 	updateDocUC        ports.UpdateDocumentService
 	archiveDocUC       ports.ArchiveDocumentService
 	listCatsUC         ports.ListCategoriesService
+	createCatUC        ports.CreateCategoryService
+	updateCatUC        ports.UpdateCategoryService
+	deactivateCatUC    ports.DeactivateCategoryService
 	uploadFileUC       ports.UploadDocumentFileService
 	listFilesUC        ports.ListDocumentFilesService
 	downloadFileUC     ports.DownloadDocumentFileService
@@ -52,6 +55,9 @@ func NewArchiveHandler(
 	updateDocUC ports.UpdateDocumentService,
 	archiveDocUC ports.ArchiveDocumentService,
 	listCatsUC ports.ListCategoriesService,
+	createCatUC ports.CreateCategoryService,
+	updateCatUC ports.UpdateCategoryService,
+	deactivateCatUC ports.DeactivateCategoryService,
 	uploadFileUC ports.UploadDocumentFileService,
 	listFilesUC ports.ListDocumentFilesService,
 	downloadFileUC ports.DownloadDocumentFileService,
@@ -71,6 +77,9 @@ func NewArchiveHandler(
 		updateDocUC:        updateDocUC,
 		archiveDocUC:       archiveDocUC,
 		listCatsUC:         listCatsUC,
+		createCatUC:        createCatUC,
+		updateCatUC:        updateCatUC,
+		deactivateCatUC:    deactivateCatUC,
 		uploadFileUC:       uploadFileUC,
 		listFilesUC:        listFilesUC,
 		downloadFileUC:     downloadFileUC,
@@ -297,11 +306,68 @@ func (h *ArchiveHandler) ArchiveDocument(c echo.Context) error {
 
 // ListCategories handles GET /api/v1/archive/categories
 func (h *ArchiveHandler) ListCategories(c echo.Context) error {
-	cats, err := h.listCatsUC.Execute(c.Request().Context())
+	userID := currentUserID(c)
+	if userID == "" {
+		return responses.Unauthorized(c, "User not authenticated")
+	}
+	cats, err := h.listCatsUC.Execute(c.Request().Context(), userID, workspaceIDParam(c))
 	if err != nil {
-		return err
+		return mapArchiveAPIError(c, err)
 	}
 	return responses.OK(c, cats, "categories retrieved successfully")
+}
+
+// CreateCategory handles POST /api/v1/archive/categories
+func (h *ArchiveHandler) CreateCategory(c echo.Context) error {
+	userID := currentUserID(c)
+	if userID == "" {
+		return responses.Unauthorized(c, "User not authenticated")
+	}
+	var req dtos.CreateCategoryRequest
+	if err := c.Bind(&req); err != nil {
+		return responses.BadRequest(c, "invalid request body")
+	}
+	if req.WorkspaceID == "" {
+		req.WorkspaceID = workspaceIDParam(c)
+	}
+	cat, err := h.createCatUC.Execute(c.Request().Context(), userID, &req)
+	if err != nil {
+		return mapArchiveAPIError(c, err)
+	}
+	return responses.Created(c, cat, "category created successfully")
+}
+
+// UpdateCategory handles PATCH /api/v1/archive/categories/:code
+func (h *ArchiveHandler) UpdateCategory(c echo.Context) error {
+	userID := currentUserID(c)
+	if userID == "" {
+		return responses.Unauthorized(c, "User not authenticated")
+	}
+	var req dtos.UpdateCategoryRequest
+	if err := c.Bind(&req); err != nil {
+		return responses.BadRequest(c, "invalid request body")
+	}
+	wsID := workspaceIDParam(c)
+	if wsID == "" {
+		wsID = req.WorkspaceID
+	}
+	cat, err := h.updateCatUC.Execute(c.Request().Context(), userID, wsID, c.Param("code"), &req, currentUserIsSuperAdmin(c))
+	if err != nil {
+		return mapArchiveAPIError(c, err)
+	}
+	return responses.OK(c, cat, "category updated successfully")
+}
+
+// DeactivateCategory handles DELETE /api/v1/archive/categories/:code
+func (h *ArchiveHandler) DeactivateCategory(c echo.Context) error {
+	userID := currentUserID(c)
+	if userID == "" {
+		return responses.Unauthorized(c, "User not authenticated")
+	}
+	if err := h.deactivateCatUC.Execute(c.Request().Context(), userID, workspaceIDParam(c), c.Param("code")); err != nil {
+		return mapArchiveAPIError(c, err)
+	}
+	return responses.OK(c, nil, "category deactivated successfully")
 }
 
 func mapArchiveAPIError(c echo.Context, err error) error {
@@ -325,12 +391,19 @@ func mapArchiveAPIError(c echo.Context, err error) error {
 		errors.Is(err, domainerrors.ErrCannotModifyOwner),
 		errors.Is(err, domainerrors.ErrHouseholdOnlyInvite),
 		errors.Is(err, domainerrors.ErrTooManyExtraFields),
-		errors.Is(err, domainerrors.ErrInvalidExtraField):
+		errors.Is(err, domainerrors.ErrInvalidExtraField),
+		errors.Is(err, domainerrors.ErrCategoryLabelRequired),
+		errors.Is(err, domainerrors.ErrCategoryLabelTooLong),
+		errors.Is(err, domainerrors.ErrCategoryDuplicateLabel),
+		errors.Is(err, domainerrors.ErrTooManyCustomCategories),
+		errors.Is(err, domainerrors.ErrCannotModifySystemCategory),
+		errors.Is(err, domainerrors.ErrCategoryInUse):
 		return responses.BadRequest(c, err.Error())
 	case errors.Is(err, domainerrors.ErrDocumentNotFound),
 		errors.Is(err, domainerrors.ErrWorkspaceNotFound),
 		errors.Is(err, domainerrors.ErrFileNotFound),
-		errors.Is(err, domainerrors.ErrInviteeNotFound):
+		errors.Is(err, domainerrors.ErrInviteeNotFound),
+		errors.Is(err, domainerrors.ErrCategoryNotFound):
 		return responses.NotFound(c, err.Error())
 	case errors.Is(err, domainerrors.ErrNotWorkspaceMember),
 		errors.Is(err, domainerrors.ErrInsufficientWorkspaceRole):
@@ -355,6 +428,19 @@ func currentUserID(c echo.Context) string {
 		return id
 	}
 	return ""
+}
+
+func currentUserIsSuperAdmin(c echo.Context) bool {
+	u, ok := c.Get("user").(*authentities.User)
+	if !ok || u == nil {
+		return false
+	}
+	for i := range u.Roles {
+		if u.Roles[i].Name == "super_admin" {
+			return true
+		}
+	}
+	return false
 }
 
 func parseOptionalDate(raw string) (*time.Time, bool, error) {

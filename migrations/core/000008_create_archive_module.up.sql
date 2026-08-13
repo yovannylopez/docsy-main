@@ -33,10 +33,22 @@ CREATE INDEX IF NOT EXISTS idx_archive_workspace_members_user ON archive_workspa
 
 CREATE TABLE IF NOT EXISTS archive_document_categories (
     code VARCHAR(64) PRIMARY KEY,
+    workspace_id UUID REFERENCES archive_workspaces(id) ON DELETE CASCADE,
     label_es VARCHAR(120) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
-    is_active BOOLEAN NOT NULL DEFAULT true
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    is_system BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT archive_document_categories_scope_chk CHECK (
+        (is_system = true AND workspace_id IS NULL)
+        OR (is_system = false AND workspace_id IS NOT NULL)
+    )
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_archive_document_categories_ws_label
+    ON archive_document_categories (workspace_id, lower(label_es))
+    WHERE workspace_id IS NOT NULL AND is_active = true;
 
 CREATE TABLE IF NOT EXISTS archive_documents (
     id UUID PRIMARY KEY,
@@ -77,19 +89,25 @@ CREATE INDEX IF NOT EXISTS idx_archive_document_files_document ON archive_docume
 
 COMMENT ON TABLE archive_workspaces IS 'multi-tenant containers for personal, household or organization archives';
 COMMENT ON TABLE archive_workspace_members IS 'membership of users in archive workspaces';
-COMMENT ON TABLE archive_document_categories IS 'seeded document categories for the personal archive module';
+COMMENT ON TABLE archive_document_categories IS 'system seed + per-workspace flat custom categories (no hierarchy)';
 COMMENT ON TABLE archive_documents IS 'document metadata (binaries in archive_document_files, iteration C)';
 COMMENT ON TABLE archive_document_files IS 'stored binary attachments for archive documents';
 
--- Categories seed
-INSERT INTO archive_document_categories (code, label_es, sort_order, is_active) VALUES
-    ('taxes', 'Impuestos', 10, true),
-    ('utilities', 'Servicios públicos', 20, true),
-    ('invoices', 'Facturas de compra', 30, true),
-    ('payments', 'Pagos y recibos', 40, true),
-    ('certificates', 'Certificados', 50, true),
-    ('health', 'Salud', 60, true),
-    ('other', 'Otros', 90, true)
+-- Categories seed (system, flat — no parent/child)
+INSERT INTO archive_document_categories (code, workspace_id, label_es, sort_order, is_active, is_system) VALUES
+    ('identity', NULL, 'Identidad', 10, true, true),
+    ('health', NULL, 'Salud', 20, true, true),
+    ('finance', NULL, 'Finanzas', 30, true, true),
+    ('taxes', NULL, 'Impuestos', 40, true, true),
+    ('property', NULL, 'Propiedades', 50, true, true),
+    ('insurance', NULL, 'Seguros', 60, true, true),
+    ('education', NULL, 'Educación', 70, true, true),
+    ('work', NULL, 'Trabajo', 80, true, true),
+    ('legal', NULL, 'Legal', 90, true, true),
+    ('utilities', NULL, 'Servicios públicos', 100, true, true),
+    ('invoices', NULL, 'Facturas de compra', 110, true, true),
+    ('photos', NULL, 'Fotografías', 120, true, true),
+    ('other', NULL, 'Otros', 200, true, true)
 ON CONFLICT (code) DO NOTHING;
 
 -- Permissions

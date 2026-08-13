@@ -121,7 +121,7 @@ func (h *ArchivePageHandler) DeleteDocumentFile(c echo.Context) error {
 func (h *ArchivePageHandler) renderEditWithFileError(c echo.Context, userID, docID, errMsg string) error {
 	wsID := workspaceIDParam(c)
 	doc, err := h.getDocUC.Execute(c.Request().Context(), userID, wsID, docID)
-	cats, _ := h.listCatsUC.Execute(c.Request().Context())
+	cats := h.loadCategories(c, wsID)
 	if err != nil {
 		return h.renderForm(c, DocumentForm{ID: docID, WorkspaceID: wsID}, cats, true, errMsg, http.StatusUnprocessableEntity)
 	}

@@ -49,8 +49,15 @@ const (
 	ocrExtraFieldsCap      = 8
 	ocrKeywordWindow       = 96
 
-	kwReferenciaPago = "referencia de pago"
-	kwFormaPago      = "forma de pago"
+	kwReferenciaPago     = "referencia de pago"
+	kwFormaPago          = "forma de pago"
+	kwVencimiento        = "vencimiento"
+	kwExpedicion         = "expedicion"          //nolint:misspell // Spanish OCR (sin tilde)
+	kwFechaExpedicion    = "fecha expedicion"    //nolint:misspell // Spanish OCR (sin tilde)
+	kwFechaDeExpedicion  = "fecha de expedicion" //nolint:misspell // Spanish OCR (sin tilde)
+	kwExpedicionAccent   = "expedición"
+	kwFechaExpedicionAcc = "fecha expedición"
+	kwFechaDeExpedicionA = "fecha de expedición"
 
 	extraKeyContract       = "contract_number"
 	extraKeyServiceNumber  = "service_number"
@@ -110,14 +117,14 @@ var (
 		`(?i)(?:factura\s*(?:n[ºo°.]?|no\.?|#)|recibo\s*(?:n[ºo°.]?|no\.?|#)?|` +
 			`ref(?:erencia)?)\s*[:#]?\s*([A-Z0-9][A-Z0-9\-_/]{3,40})`,
 	)
-	reDigitsToken   = regexp.MustCompile(`([0-9]{5,20})`)
-	reDateToken     = regexp.MustCompile(`(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4})`)
-	reDateMonthES   = regexp.MustCompile(
+	reDigitsToken = regexp.MustCompile(`([0-9]{5,20})`)
+	reDateToken   = regexp.MustCompile(`(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4})`)
+	reDateMonthES = regexp.MustCompile(
 		`(?i)\b([oO0-9]?\d)[/\-.\s]+(ene|feb|mar|abr|may|jun|jul|ago|sep|sept|oct|nov|dic)[a-z]*[/\-.\s]+(\d{2,4})\b`,
 	)
 	reMoneyTokenCap = regexp.MustCompile(`\$?\s*((?:\d{1,3}(?:\.\d{3})+|\d{4,}))`)
 
-	reNITLine = regexp.MustCompile(`(?i)\bN\.?\s*I\.?\s*T\.?\b`)
+	reNITLine  = regexp.MustCompile(`(?i)\bN\.?\s*I\.?\s*T\.?\b`)
 	reNITValue = regexp.MustCompile(
 		`(?i)\bN\.?\s*I\.?\s*T\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9.\-]{5,24})`,
 	)
@@ -364,7 +371,7 @@ func isGenericLine(line string) bool {
 	l := strings.ToLower(strings.TrimSpace(line))
 	generics := []string{
 		"factura", "recibo", "cuenta de cobro", "total a pagar", "total",
-		"fecha", "vencimiento", "nit", "page", "página", "www.", "http",
+		"fecha", kwVencimiento, "nit", "page", "página", "www.", "http",
 		"señor", "senor", "cliente", "direccion", "dirección",
 		"servicio público", "servicio publico", "atendemos", "brilla creciendo",
 		"número del contrato", "numero del contrato", "nro de identificación",
@@ -568,12 +575,12 @@ func pickDates(text string, lines []string, flat string) (docDate, dueDate strin
 	if dueDate == "" {
 		dueDate = parseAnyDate(captureAfterKeywords(flat, []string{
 			"ultimo dia de pago", "último día de pago", "ultimo día de pago",
-			"vencimiento", "vencim", "vence el", "vence",
+			kwVencimiento, "vencim", "vence el", "vence",
 		}, reDateMonthES))
 	}
 	if dueDate == "" {
 		dueDate = parseAnyDate(captureAfterKeywords(flat, []string{
-			"ultimo dia de pago", "último día de pago", "vencimiento", "vence",
+			"ultimo dia de pago", "último día de pago", kwVencimiento, "vence",
 		}, reDateToken))
 	}
 
@@ -585,8 +592,8 @@ func pickDates(text string, lines []string, flat string) (docDate, dueDate strin
 	}
 	if docDate == "" {
 		docDate = parseAnyDate(captureAfterKeywords(flat, []string{
-			"fecha expedicion", "fecha de expedicion", "fecha expedición", "fecha de expedición",
-			"expedicion", "expedición",
+			kwFechaExpedicion, kwFechaDeExpedicion, kwFechaExpedicionAcc, kwFechaDeExpedicionA,
+			kwExpedicion, kwExpedicionAccent,
 		}, reDateMonthES))
 	}
 	if docDate == "" {
@@ -671,29 +678,29 @@ func parseAnyDate(s string) string {
 func spanishMonthNumber(mon string) int {
 	switch strings.ToLower(strings.TrimSpace(mon)) {
 	case "ene", "enero":
-		return 1
+		return int(time.January)
 	case "feb", "febrero":
-		return 2
+		return int(time.February)
 	case "mar", "marzo":
-		return 3
+		return int(time.March)
 	case "abr", "abril":
-		return 4
+		return int(time.April)
 	case "may", "mayo":
-		return 5
+		return int(time.May)
 	case "jun", "junio":
-		return 6
+		return int(time.June)
 	case "jul", "julio":
-		return 7
+		return int(time.July)
 	case "ago", "agosto":
-		return 8
+		return int(time.August)
 	case "sep", "sept", "septiembre", "set", "setiembre":
-		return 9
+		return int(time.September)
 	case "oct", "octubre":
-		return 10
+		return int(time.October)
 	case "nov", "noviembre":
-		return 11
+		return int(time.November)
 	case "dic", "diciembre":
-		return 12
+		return int(time.December)
 	default:
 		return 0
 	}

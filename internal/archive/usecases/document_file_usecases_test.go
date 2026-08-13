@@ -92,12 +92,12 @@ func TestCreateDocumentWithFileUseCase_CreatesWithPDF(t *testing.T) {
 	createdDoc.Title = "Predial"
 	createdDoc.CategoryCode = "taxes"
 
-	docRepo.On("CategoryExists", mock.Anything, "taxes").Return(true, nil)
+	docRepo.On("CategoryExists", mock.Anything, mock.Anything, "taxes").Return(true, nil)
 	docRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Document")).Run(func(args mock.Arguments) {
 		d := args.Get(1).(*entities.Document)
 		d.ID = "d-new"
 	}).Return(nil)
-	docRepo.On("ListCategories", mock.Anything).Return([]entities.DocumentCategory{
+	docRepo.On("ListCategories", mock.Anything, mock.Anything).Return([]entities.DocumentCategory{
 		{Code: "taxes", LabelES: "Impuestos"},
 	}, nil)
 	wsRepo.On("FindByID", mock.Anything, "ws-1").Return(ws, nil)

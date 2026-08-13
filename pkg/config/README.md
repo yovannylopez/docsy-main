@@ -210,7 +210,7 @@ type LogConfig struct {
 | `DB_PORT` | `5432` | Puerto de la base de datos |
 | `DB_USER` | `postgres` | Usuario de la base de datos |
 | `DB_PASSWORD` | `` | Contraseña de la base de datos |
-| `DB_NAME` | `go_boilerplate` | Nombre de la base de datos |
+| `DB_NAME` | `docsy-main-db` | Nombre de la base de datos |
 | `DB_SSLMODE` | `disable` | Modo SSL de la base de datos |
 
 ### Configuración de Autenticación

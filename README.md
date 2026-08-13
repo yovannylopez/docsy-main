@@ -103,7 +103,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=your-password
-DB_NAME=go_boilerplate
+DB_NAME=docsy-main-db
 DB_SSLMODE=disable
 
 JWT_SECRET=change-this-to-a-long-random-secret

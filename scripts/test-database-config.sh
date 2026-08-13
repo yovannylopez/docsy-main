@@ -12,7 +12,7 @@ echo "Variables individuales de ejemplo:"
 echo "DB_HOST=localhost"
 echo "DB_PORT=5432"
 echo "DB_USER=postgres"
-echo "DB_NAME=go_boilerplate"
+echo "DB_NAME=docsy-main-db"
 echo "DB_SSLMODE=disable"
 echo ""
 

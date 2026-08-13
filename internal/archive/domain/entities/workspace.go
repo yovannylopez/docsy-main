@@ -36,12 +36,16 @@ type WorkspaceMember struct {
 	JoinedAt    time.Time `json:"joined_at" db:"joined_at"`
 }
 
-// DocumentCategory is a seeded classification for archive documents.
+// DocumentCategory is a flat classification for archive documents (system or workspace-custom).
 type DocumentCategory struct {
-	Code      string `json:"code" db:"code"`
-	LabelES   string `json:"label_es" db:"label_es"`
-	SortOrder int    `json:"sort_order" db:"sort_order"`
-	IsActive  bool   `json:"is_active" db:"is_active"`
+	Code        string    `json:"code" db:"code"`
+	WorkspaceID *string   `json:"workspace_id,omitempty" db:"workspace_id"`
+	LabelES     string    `json:"label_es" db:"label_es"`
+	SortOrder   int       `json:"sort_order" db:"sort_order"`
+	IsActive    bool      `json:"is_active" db:"is_active"`
+	IsSystem    bool      `json:"is_system" db:"is_system"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // WorkspaceMembership is a workspace plus the caller's role (list query).

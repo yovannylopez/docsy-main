@@ -86,8 +86,39 @@ type stubListCatsUC struct {
 	cats []dtos.DocumentCategoryResponse
 }
 
-func (s stubListCatsUC) Execute(_ context.Context) ([]dtos.DocumentCategoryResponse, error) {
+func (s stubListCatsUC) Execute(_ context.Context, _, _ string) ([]dtos.DocumentCategoryResponse, error) {
 	return s.cats, nil
+}
+
+type stubCreateCatUC struct {
+	cat *dtos.DocumentCategoryResponse
+	err error
+}
+
+func (s stubCreateCatUC) Execute(_ context.Context, _ string, _ *dtos.CreateCategoryRequest) (*dtos.DocumentCategoryResponse, error) {
+	return s.cat, s.err
+}
+
+type stubUpdateCatUC struct {
+	cat *dtos.DocumentCategoryResponse
+	err error
+}
+
+func (s stubUpdateCatUC) Execute(
+	_ context.Context,
+	_, _, _ string,
+	_ *dtos.UpdateCategoryRequest,
+	_ bool,
+) (*dtos.DocumentCategoryResponse, error) {
+	return s.cat, s.err
+}
+
+type stubDeactivateCatUC struct {
+	err error
+}
+
+func (s stubDeactivateCatUC) Execute(_ context.Context, _, _, _ string) error {
+	return s.err
 }
 
 type stubListFoldersUC struct {
@@ -161,6 +192,9 @@ func newTestArchiveHandler() *ArchiveHandler {
 		stubUpdateDocUC{doc: &dtos.DocumentResponse{ID: "d-1", Title: "Gas editado"}},
 		stubArchiveDocUC{doc: &dtos.DocumentResponse{ID: "d-1", Status: "archived"}},
 		stubListCatsUC{cats: []dtos.DocumentCategoryResponse{{Code: "utilities", LabelES: "Servicios públicos"}}},
+		stubCreateCatUC{cat: &dtos.DocumentCategoryResponse{Code: "c_1", LabelES: "Custom"}},
+		stubUpdateCatUC{cat: &dtos.DocumentCategoryResponse{Code: "c_1", LabelES: "Custom 2"}},
+		stubDeactivateCatUC{},
 		stubUploadFileUC{file: &dtos.DocumentFileResponse{ID: "f-1", OriginalName: "a.pdf"}},
 		stubListFilesUC{files: []dtos.DocumentFileResponse{{ID: "f-1", OriginalName: "a.pdf", ContentType: "application/pdf"}}},
 		stubDownloadFileUC{result: &dtos.DownloadDocumentFileResult{
@@ -251,6 +285,7 @@ func TestArchiveHandler_ListCategories(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/archive/categories", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
+	withUser(c)
 
 	err := newTestArchiveHandler().ListCategories(c)
 	require.NoError(t, err)

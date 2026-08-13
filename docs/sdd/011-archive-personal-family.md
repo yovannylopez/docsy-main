@@ -39,9 +39,12 @@ Referencias aportadas por el dueño del producto (fotos WhatsApp + PDFs en Downl
 | Impuesto predial | Municipio Dosquebradas | `taxes` | Emisor, Nº factura/predio, fecha emisión, vencimiento, valor a pagar, referencia |
 | Servicios públicos | SERVICIUDAD (acueducto/aseo), Efigas (gas) | `utilities` | Emisor, cuenta/contrato, periodo, vencimiento, total, referencia de pago |
 | Factura electrónica de venta | TecnoTienda / DIAN (CUFE) | `invoices` | Emisor (NIT), Nº factura, fecha, total, CUFE (opcional en notas/ref) |
-| Recibo de pago / mensualidad | Escuela de fútbol | `payments` | Emisor, concepto, fecha, valor, Nº recibo |
-| Certificado de estudios | PDF académico | `certificates` | Emisor (institución), titular, fecha, tipo de certificado |
+| Recibo de pago / mensualidad | Escuela de fútbol | `education` (o custom) | Emisor, concepto, fecha, valor, Nº recibo |
+| Certificado de estudios | PDF académico | `education` | Emisor (institución), titular, fecha, tipo de certificado |
+| Contrato laboral | Empresa | `work` | Emisor, titular, fecha, notas |
 | Salud (previsto) | Citas, órdenes | `health` | Emisor, fecha, paciente, notas |
+| Cédula / pasaporte | Documento de identidad | `identity` | Titular, Nº documento, vencimiento |
+| Póliza / SOAT | Seguro | `insurance` | Emisor, póliza, vencimiento |
 
 **Implicación de diseño:** el MVP captura **metadatos manuales** ricos (no solo título). El PDF/imagen se adjunta en Iteración C. OCR/extracción automática = SDD futuro.
 
@@ -122,13 +125,21 @@ DocumentFile  (schema en A; uso en C)
 
 | code | label_es |
 |------|----------|
+| `identity` | Identidad |
+| `health` | Salud |
+| `finance` | Finanzas |
 | `taxes` | Impuestos |
+| `property` | Propiedades |
+| `insurance` | Seguros |
+| `education` | Educación |
+| `work` | Trabajo |
+| `legal` | Legal |
 | `utilities` | Servicios públicos |
 | `invoices` | Facturas de compra |
-| `payments` | Pagos y recibos |
-| `certificates` | Certificados |
-| `health` | Salud |
+| `photos` | Fotografías |
 | `other` | Otros |
+
+Las categorías son **planas** (sin jerarquía). Además del seed de sistema, cada workspace puede crear categorías personalizadas (ver SDD 013).
 
 ### Reglas
 

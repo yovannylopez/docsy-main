@@ -261,29 +261,129 @@ func (r *DocumentRepositoryAdapter) Delete(ctx context.Context, workspaceID, doc
 	return nil
 }
 
-// CategoryExists reports whether a category code is active.
-func (r *DocumentRepositoryAdapter) CategoryExists(ctx context.Context, code string) (bool, error) {
-	const q = `SELECT EXISTS(SELECT 1 FROM archive_document_categories WHERE code = $1 AND is_active = true)`
+// CategoryExists reports whether a category code is active for the workspace (system or custom).
+func (r *DocumentRepositoryAdapter) CategoryExists(ctx context.Context, workspaceID, code string) (bool, error) {
+	const q = `
+		SELECT EXISTS(
+			SELECT 1 FROM archive_document_categories
+			WHERE code = $1 AND is_active = true
+			  AND (is_system = true OR workspace_id = $2)
+		)`
 	var ok bool
-	if err := r.db.GetContext(ctx, &ok, q, code); err != nil {
+	if err := r.db.GetContext(ctx, &ok, q, code, workspaceID); err != nil {
 		return false, fmt.Errorf("check category: %w", err)
 	}
 	return ok, nil
 }
 
-// ListCategories returns active categories ordered by sort_order.
-func (r *DocumentRepositoryAdapter) ListCategories(ctx context.Context) ([]entities.DocumentCategory, error) {
+// ListCategories returns active system categories plus custom ones for the workspace.
+func (r *DocumentRepositoryAdapter) ListCategories(ctx context.Context, workspaceID string) ([]entities.DocumentCategory, error) {
 	const q = `
-		SELECT code, label_es, sort_order, is_active
+		SELECT code, workspace_id, label_es, sort_order, is_active, is_system, created_at, updated_at
 		FROM archive_document_categories
 		WHERE is_active = true
-		ORDER BY sort_order ASC, code ASC`
+		  AND (is_system = true OR workspace_id = $1)
+		ORDER BY sort_order ASC, label_es ASC, code ASC`
 
 	var cats []entities.DocumentCategory
-	if err := r.db.SelectContext(ctx, &cats, q); err != nil {
+	if err := r.db.SelectContext(ctx, &cats, q, workspaceID); err != nil {
 		return nil, fmt.Errorf("list categories: %w", err)
 	}
 	return cats, nil
+}
+
+// FindCategory loads one active category visible in the workspace.
+func (r *DocumentRepositoryAdapter) FindCategory(ctx context.Context, workspaceID, code string) (*entities.DocumentCategory, error) {
+	const q = `
+		SELECT code, workspace_id, label_es, sort_order, is_active, is_system, created_at, updated_at
+		FROM archive_document_categories
+		WHERE code = $1 AND is_active = true
+		  AND (is_system = true OR workspace_id = $2)`
+	var cat entities.DocumentCategory
+	if err := r.db.GetContext(ctx, &cat, q, code, workspaceID); err != nil {
+		return nil, fmt.Errorf("find category: %w", err)
+	}
+	return &cat, nil
+}
+
+// CreateCategory inserts a custom workspace category.
+func (r *DocumentRepositoryAdapter) CreateCategory(ctx context.Context, cat *entities.DocumentCategory) error {
+	const q = `
+		INSERT INTO archive_document_categories (
+			code, workspace_id, label_es, sort_order, is_active, is_system, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := r.db.ExecContext(
+		ctx, q,
+		cat.Code, nullStr(cat.WorkspaceID), cat.LabelES, cat.SortOrder,
+		cat.IsActive, cat.IsSystem, cat.CreatedAt, cat.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("create category: %w", err)
+	}
+	return nil
+}
+
+// UpdateCategory updates label/sort of a custom category.
+func (r *DocumentRepositoryAdapter) UpdateCategory(ctx context.Context, cat *entities.DocumentCategory) error {
+	const q = `
+		UPDATE archive_document_categories
+		SET label_es = $3, sort_order = $4, updated_at = $5
+		WHERE code = $1 AND workspace_id = $2 AND is_system = false AND is_active = true`
+	res, err := r.db.ExecContext(ctx, q, cat.Code, *cat.WorkspaceID, cat.LabelES, cat.SortOrder, cat.UpdatedAt)
+	if err != nil {
+		return fmt.Errorf("update category: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("update category: no rows affected")
+	}
+	return nil
+}
+
+// UpdateSystemCategory updates the label of a global system category.
+func (r *DocumentRepositoryAdapter) UpdateSystemCategory(ctx context.Context, cat *entities.DocumentCategory) error {
+	const q = `
+		UPDATE archive_document_categories
+		SET label_es = $2, sort_order = $3, updated_at = $4
+		WHERE code = $1 AND is_system = true AND workspace_id IS NULL AND is_active = true`
+	res, err := r.db.ExecContext(ctx, q, cat.Code, cat.LabelES, cat.SortOrder, cat.UpdatedAt)
+	if err != nil {
+		return fmt.Errorf("update system category: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("update system category: no rows affected")
+	}
+	return nil
+}
+
+// DeactivateCategory soft-deactivates a custom category.
+func (r *DocumentRepositoryAdapter) DeactivateCategory(ctx context.Context, workspaceID, code string) error {
+	const q = `
+		UPDATE archive_document_categories
+		SET is_active = false, updated_at = NOW()
+		WHERE code = $1 AND workspace_id = $2 AND is_system = false AND is_active = true`
+	res, err := r.db.ExecContext(ctx, q, code, workspaceID)
+	if err != nil {
+		return fmt.Errorf("deactivate category: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("deactivate category: no rows affected")
+	}
+	return nil
+}
+
+// CountCustomCategories counts active custom categories for a workspace.
+func (r *DocumentRepositoryAdapter) CountCustomCategories(ctx context.Context, workspaceID string) (int, error) {
+	const q = `
+		SELECT COUNT(*) FROM archive_document_categories
+		WHERE workspace_id = $1 AND is_system = false AND is_active = true`
+	var n int
+	if err := r.db.GetContext(ctx, &n, q, workspaceID); err != nil {
+		return 0, fmt.Errorf("count custom categories: %w", err)
+	}
+	return n, nil
 }
 
 // CountByCategory returns document counts per category_code for a workspace.

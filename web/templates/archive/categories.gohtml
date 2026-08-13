@@ -1,0 +1,197 @@
+{{define "archive/categories"}}
+{{template "base-head" .}}
+{{template "app-shell-start" .}}
+
+<div class="files-browser w-full max-w-3xl mx-auto space-y-5">
+  <nav class="files-breadcrumb text-muted-foreground flex flex-wrap items-center gap-2 text-sm" aria-label="Ruta">
+    <a href="/archivo" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors" title="Mi archivo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9.75L12 3l9 6.75V20a1.5 1.5 0 01-1.5 1.5H4.5A1.5 1.5 0 013 20V9.75z" />
+      </svg>
+      Archivo
+    </a>
+    <span aria-hidden="true">/</span>
+    <a href="{{.DocsURL}}" class="hover:text-foreground transition-colors">Documentos</a>
+    <span aria-hidden="true">/</span>
+    <span class="text-foreground font-medium">Categorías</span>
+  </nav>
+
+  <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">{{.Title}}</h1>
+      <p class="text-muted-foreground mt-1 text-sm sm:text-base">Añade las tuyas; las base vienen listas para usar.</p>
+    </div>
+    <a href="{{.DocsURL}}" class="btn btn-secondary inline-flex rounded-xl px-4 py-2.5 text-sm font-medium">Volver a documentos</a>
+  </div>
+
+  {{if .Error}}
+  {{template "partials/alert-error" .}}
+  {{end}}
+  {{template "partials/alert-success-message" .Success}}
+
+  {{if gt (len .Workspaces) 1}}
+  <form method="get" action="/archivo/categorias" class="flex flex-wrap items-center gap-3">
+    <label for="workspace_id" class="text-muted-foreground text-sm">Archivo</label>
+    <select id="workspace_id" name="workspace_id" class="border-border bg-background text-foreground rounded-xl border px-3 py-2.5 text-sm" onchange="this.form.submit()">
+      {{range .Workspaces}}
+      <option value="{{.ID}}" {{if eq $.WorkspaceID .ID}}selected{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+  </form>
+  {{end}}
+
+  <form method="post" action="/archivo/categorias" class="files-toolbar bg-card border-border flex flex-col gap-2 rounded-2xl border p-3 sm:flex-row sm:items-center sm:p-4">
+    {{if .WorkspaceID}}<input type="hidden" name="workspace_id" value="{{.WorkspaceID}}" />{{end}}
+    <label for="label_es" class="sr-only">Nueva categoría</label>
+    <input
+      id="label_es"
+      name="label_es"
+      type="text"
+      maxlength="120"
+      required
+      value="{{if not .Form.Code}}{{.Form.LabelES}}{{end}}"
+      placeholder="Nueva categoría, ej. Certificados escolares"
+      class="border-border bg-background text-foreground focus:border-primary focus:ring-primary/20 min-w-0 flex-1 rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2" />
+    <button type="submit" class="btn btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+      Añadir
+    </button>
+  </form>
+  {{if and .Form.GeneralError (not .Form.Code)}}
+  <p class="text-sm text-red-600 dark:text-red-400">{{.Form.GeneralError}}</p>
+  {{end}}
+  {{if and .Form.GeneralError .Form.Code}}
+  <p class="text-sm text-red-600 dark:text-red-400">{{.Form.GeneralError}}</p>
+  {{end}}
+
+  <section class="space-y-3" aria-labelledby="custom-cats-heading">
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 id="custom-cats-heading" class="text-foreground text-sm font-semibold tracking-wide uppercase">Tus categorías</h2>
+      <span class="text-muted-foreground text-xs">{{len .CustomCategories}}</span>
+    </div>
+
+    {{if .CustomCategories}}
+    <ul class="bg-card border-border divide-border divide-y overflow-hidden rounded-2xl border">
+      {{range .CustomCategories}}
+      <li class="flex items-center gap-3 px-4 py-3">
+        {{if eq $.Form.Code .Code}}
+        <form method="post" action="{{.EditURL}}" class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          {{if $.WorkspaceID}}<input type="hidden" name="workspace_id" value="{{$.WorkspaceID}}" />{{end}}
+          <input
+            name="label_es"
+            type="text"
+            maxlength="120"
+            required
+            autofocus
+            value="{{$.Form.LabelES}}"
+            class="border-border bg-background text-foreground focus:border-primary min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm outline-none" />
+          <div class="flex shrink-0 gap-2">
+            <button type="submit" class="btn btn-primary rounded-xl px-3 py-2 text-xs font-medium">Guardar</button>
+            <a href="{{$.CancelEditURL}}" class="btn btn-secondary rounded-xl px-3 py-2 text-xs font-medium">Cancelar</a>
+          </div>
+        </form>
+        {{else}}
+        <span class="bg-primary/10 text-primary inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H14.43c.54 0 .808.192.94.384l.07.096L17 7h3a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1h3l1.56-3.52.07-.096C7.76 3.192 8.028 3 8.568 3h1z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16a3 3 0 100-6 3 3 0 000 6z" />
+          </svg>
+        </span>
+        <span class="text-foreground min-w-0 flex-1 truncate font-medium">{{.LabelES}}</span>
+        <div class="flex shrink-0 items-center gap-1">
+          <a
+            href="{{.RenameURL}}"
+            class="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+            title="Renombrar"
+            aria-label="Renombrar {{.LabelES}}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12.75V19.5A2.25 2.25 0 0117.25 21.75H4.5A2.25 2.25 0 012.25 19.5V6.75A2.25 2.25 0 014.5 4.5h6.75" />
+            </svg>
+          </a>
+          <form method="post" action="{{.DeleteURL}}" onsubmit="return confirm('¿Desactivar «{{.LabelES}}»?');" class="inline">
+            {{if $.WorkspaceID}}<input type="hidden" name="workspace_id" value="{{$.WorkspaceID}}" />{{end}}
+            <button
+              type="submit"
+              class="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+              title="Desactivar"
+              aria-label="Desactivar {{.LabelES}}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
+            </button>
+          </form>
+        </div>
+        {{end}}
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <div class="bg-card border-border rounded-2xl border border-dashed px-4 py-8 text-center">
+      <p class="text-muted-foreground text-sm">Aún no tienes categorías propias. Usa el campo de arriba para crear la primera.</p>
+    </div>
+    {{end}}
+  </section>
+
+  <section class="space-y-3" aria-labelledby="system-cats-heading">
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 id="system-cats-heading" class="text-foreground text-sm font-semibold tracking-wide uppercase">Categorías base</h2>
+      <span class="text-muted-foreground text-xs">{{len .SystemCategories}}</span>
+    </div>
+    <ul class="bg-card border-border divide-border divide-y overflow-hidden rounded-2xl border">
+      {{range .SystemCategories}}
+      <li class="flex items-center gap-3 px-4 py-3">
+        {{if and $.CanManageSystem (eq $.Form.Code .Code)}}
+        <form method="post" action="{{.EditURL}}" class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          {{if $.WorkspaceID}}<input type="hidden" name="workspace_id" value="{{$.WorkspaceID}}" />{{end}}
+          <input
+            name="label_es"
+            type="text"
+            maxlength="120"
+            required
+            autofocus
+            value="{{$.Form.LabelES}}"
+            class="border-border bg-background text-foreground focus:border-primary min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm outline-none" />
+          <div class="flex shrink-0 gap-2">
+            <button type="submit" class="btn btn-primary rounded-xl px-3 py-2 text-xs font-medium">Guardar</button>
+            <a href="{{$.CancelEditURL}}" class="btn btn-secondary rounded-xl px-3 py-2 text-xs font-medium">Cancelar</a>
+          </div>
+        </form>
+        {{else}}
+        <span class="bg-muted text-muted-foreground inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </span>
+        <span class="text-foreground min-w-0 flex-1 truncate font-medium">{{.LabelES}}</span>
+        {{if $.CanManageSystem}}
+        <a
+          href="{{.RenameURL}}"
+          class="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+          title="Renombrar (afecta a todos los archivos)"
+          aria-label="Renombrar {{.LabelES}}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12.75V19.5A2.25 2.25 0 0117.25 21.75H4.5A2.25 2.25 0 012.25 19.5V6.75A2.25 2.25 0 014.5 4.5h6.75" />
+          </svg>
+        </a>
+        {{end}}
+        {{end}}
+      </li>
+      {{else}}
+      <li class="text-muted-foreground px-4 py-6 text-center text-sm">No hay categorías base.</li>
+      {{end}}
+    </ul>
+    {{if .CanManageSystem}}
+    <p class="text-muted-foreground text-xs">Como super administrador puedes renombrar categorías base. El cambio es global para todos los archivos. No se pueden desactivar desde aquí.</p>
+    {{else}}
+    <p class="text-muted-foreground text-xs">Las categorías base están disponibles en todos los archivos y no se eliminan desde aquí.</p>
+    {{end}}
+  </section>
+</div>
+
+{{template "app-shell-end" .}}
+{{template "base-foot" .}}
+{{end}}

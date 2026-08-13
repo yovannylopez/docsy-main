@@ -25,6 +25,20 @@ func CurrentUserID(c echo.Context) string {
 	return ""
 }
 
+// CurrentUserIsSuperAdmin reports whether the authenticated user has the super_admin role.
+func CurrentUserIsSuperAdmin(c echo.Context) bool {
+	u := UserFromEchoContext(c)
+	if u == nil {
+		return false
+	}
+	for i := range u.Roles {
+		if u.Roles[i].Name == "super_admin" {
+			return true
+		}
+	}
+	return false
+}
+
 // DisplayUserName builds a display name from the user entity.
 func DisplayUserName(user *authentities.User) string {
 	if user == nil {

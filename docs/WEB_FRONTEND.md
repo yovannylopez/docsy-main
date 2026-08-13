@@ -159,6 +159,9 @@ Dual transport: mismos use cases que `/api/v1/users` y `GET /api/v1/auditoria`.
 | `GET /archivo/hogares/:id/miembros` | `archive.read` | listado de miembros |
 | `POST /archivo/hogares/:id/miembros` | `archive.manage` | invitar miembro por email |
 | `POST /archivo/hogares/:id/miembros/:userId/eliminar` | `archive.manage` | eliminar miembro |
+| `GET/POST /archivo/categorias` | `archive.read` / `archive.write` | gestionar categorías planas (sistema + personalizadas) |
+| `POST /archivo/categorias/:code/editar` | `archive.write` | renombrar categoría personalizada |
+| `POST /archivo/categorias/:code/desactivar` | `archive.write` | desactivar categoría personalizada sin documentos |
 | `GET /archivo/documentos` | `archive.read` | listado con filtros `q`, `category`, `status`, `workspace_id` |
 | `GET/POST /archivo/documentos/nuevo` | `archive.write` | crear documento con adjunto obligatorio (multipart `file`, `workspace_id` opcional) |
 | `POST /archivo/documentos/ocr-sugerir` | `archive.write` | OCR local (Tesseract): sugiere metadatos JSON a partir de multipart `file` (PDF/imagen); el usuario confirma en el formulario |
@@ -173,7 +176,10 @@ Dual transport: mismos use cases que `/api/v1/users` y `GET /api/v1/auditoria`.
 | `POST /api/v1/archive/workspaces/:id/members` | `archive.manage` | invitar miembro |
 | `PATCH /api/v1/archive/workspaces/:id/members/:userId` | `archive.manage` | cambiar rol |
 | `DELETE /api/v1/archive/workspaces/:id/members/:userId` | `archive.manage` | eliminar miembro |
-| `GET /api/v1/archive/categories` | `archive.read` | categorías seed |
+| `GET /api/v1/archive/categories` | `archive.read` | categorías sistema + custom del workspace |
+| `POST /api/v1/archive/categories` | `archive.write` | crear categoría personalizada plana |
+| `PATCH /api/v1/archive/categories/:code` | `archive.write` | renombrar custom |
+| `DELETE /api/v1/archive/categories/:code` | `archive.write` | desactivar custom sin documentos |
 | `GET/POST /api/v1/archive/documents` | `archive.read` / `archive.write` | listar / crear (`workspace_id` opcional) |
 | `GET/PATCH /api/v1/archive/documents/:id` | `archive.read` / `archive.write` | detalle / actualizar |
 | `POST /api/v1/archive/documents/:id/archive` | `archive.write` | soft-archive |

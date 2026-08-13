@@ -63,7 +63,8 @@ const (
 // ArchivePageData holds view data for /archivo.
 type ArchivePageData struct {
 	weblayout.AppLayoutData
-	Workspaces []WorkspaceListItem
+	Personal   *WorkspaceListItem
+	Households []WorkspaceListItem
 	Error      string
 }
 
@@ -223,6 +224,9 @@ type ArchivePageHandler struct {
 	createWithFileUC  ports.CreateDocumentWithFileService
 	updateDocUC       ports.UpdateDocumentService
 	listCatsUC        ports.ListCategoriesService
+	createCatUC       ports.CreateCategoryService
+	updateCatUC       ports.UpdateCategoryService
+	deactivateCatUC   ports.DeactivateCategoryService
 	uploadFileUC      ports.UploadDocumentFileService
 	listFilesUC       ports.ListDocumentFilesService
 	downloadFileUC    ports.DownloadDocumentFileService
@@ -245,6 +249,9 @@ func NewArchivePageHandler(
 	createWithFileUC ports.CreateDocumentWithFileService,
 	updateDocUC ports.UpdateDocumentService,
 	listCatsUC ports.ListCategoriesService,
+	createCatUC ports.CreateCategoryService,
+	updateCatUC ports.UpdateCategoryService,
+	deactivateCatUC ports.DeactivateCategoryService,
 	uploadFileUC ports.UploadDocumentFileService,
 	listFilesUC ports.ListDocumentFilesService,
 	downloadFileUC ports.DownloadDocumentFileService,
@@ -265,6 +272,9 @@ func NewArchivePageHandler(
 		createWithFileUC:  createWithFileUC,
 		updateDocUC:       updateDocUC,
 		listCatsUC:        listCatsUC,
+		createCatUC:       createCatUC,
+		updateCatUC:       updateCatUC,
+		deactivateCatUC:   deactivateCatUC,
 		uploadFileUC:      uploadFileUC,
 		listFilesUC:       listFilesUC,
 		downloadFileUC:    downloadFileUC,
@@ -273,9 +283,17 @@ func NewArchivePageHandler(
 	}
 }
 
-// ShowArchive renders GET /archivo and lists workspaces.
+func (h *ArchivePageHandler) loadCategories(c echo.Context, workspaceID string) []dtos.DocumentCategoryResponse {
+	cats, err := h.listCatsUC.Execute(c.Request().Context(), weblayout.CurrentUserID(c), workspaceID)
+	if err != nil {
+		return nil
+	}
+	return cats
+}
+
+// ShowArchive renders GET /archivo. With only a personal workspace, opens documents directly.
 func (h *ArchivePageHandler) ShowArchive(c echo.Context) error {
-	layout := weblayout.AppLayoutFromEcho(c, archiveHomeTitle, "Organiza tus documentos personales y del hogar", "/archivo")
+	layout := weblayout.AppLayoutFromEcho(c, archiveHomeTitle, "Tu espacio para documentos personales y del hogar", "/archivo")
 
 	userID := weblayout.CurrentUserID(c)
 	if userID == "" {
@@ -290,14 +308,30 @@ func (h *ArchivePageHandler) ShowArchive(c echo.Context) error {
 		})
 	}
 
-	items := make([]WorkspaceListItem, 0, len(workspaces))
+	var personal *WorkspaceListItem
+	households := make([]WorkspaceListItem, 0, len(workspaces))
 	for i := range workspaces {
-		items = append(items, toWorkspaceListItem(&workspaces[i]))
+		item := toWorkspaceListItem(&workspaces[i])
+		if workspaces[i].Type == entities.WorkspaceTypePersonal && personal == nil {
+			p := item
+			personal = &p
+			continue
+		}
+		if workspaces[i].Type == entities.WorkspaceTypeHousehold {
+			households = append(households, item)
+		}
+	}
+
+	// Default path: jump into personal documents (modern, zero friction).
+	forceHub := strings.TrimSpace(c.QueryParam("hub")) == "1"
+	if !forceHub && personal != nil && len(households) == 0 {
+		return c.Redirect(http.StatusFound, personal.DocsURL)
 	}
 
 	return c.Render(http.StatusOK, "archive/home", ArchivePageData{
 		AppLayoutData: layout,
-		Workspaces:    items,
+		Personal:      personal,
+		Households:    households,
 	})
 }
 
@@ -474,7 +508,7 @@ func (h *ArchivePageHandler) ListDocuments(c echo.Context) error {
 	}
 
 	workspaces, _ := h.listWorkspacesUC.Execute(c.Request().Context(), userID)
-	cats, _ := h.listCatsUC.Execute(c.Request().Context())
+	cats := h.loadCategories(c, workspaceID)
 	categoryLabel := categoryLabelFromList(cats, category)
 
 	base := DocumentsListPageData{
@@ -541,7 +575,7 @@ func (h *ArchivePageHandler) ListDocuments(c echo.Context) error {
 // ShowCreate renders GET /archivo/documentos/nuevo.
 func (h *ArchivePageHandler) ShowCreate(c echo.Context) error {
 	workspaceID := workspaceIDParam(c)
-	cats, _ := h.listCatsUC.Execute(c.Request().Context())
+	cats := h.loadCategories(c, workspaceID)
 	categoryCode := strings.TrimSpace(c.QueryParam("category_code"))
 	if !categoryInList(cats, categoryCode) {
 		categoryCode = defaultFormCategory
@@ -564,7 +598,7 @@ func (h *ArchivePageHandler) SubmitCreate(c echo.Context) error {
 
 	form := bindDocumentForm(c, "")
 	req, bindErr := formToCreateRequest(form)
-	cats, _ := h.listCatsUC.Execute(c.Request().Context())
+	cats := h.loadCategories(c, form.WorkspaceID)
 	if bindErr != nil {
 		form.GeneralError = bindErr.Error()
 		return h.renderForm(c, form, cats, false, bindErr.Error(), http.StatusUnprocessableEntity)
@@ -624,7 +658,7 @@ func (h *ArchivePageHandler) ShowEdit(c echo.Context) error {
 	docID := c.Param("id")
 	workspaceID := workspaceIDParam(c)
 	doc, err := h.getDocUC.Execute(c.Request().Context(), userID, workspaceID, docID)
-	cats, _ := h.listCatsUC.Execute(c.Request().Context())
+	cats := h.loadCategories(c, workspaceID)
 	if err != nil {
 		if errors.Is(err, domainerrors.ErrDocumentNotFound) {
 			return c.Render(http.StatusNotFound, "forbidden", weblayout.AppLayoutFromEcho(
@@ -665,7 +699,7 @@ func (h *ArchivePageHandler) SubmitEdit(c echo.Context) error {
 	docID := c.Param("id")
 	form := bindDocumentForm(c, docID)
 	req, bindErr := formToUpdateRequest(form)
-	cats, _ := h.listCatsUC.Execute(c.Request().Context())
+	cats := h.loadCategories(c, form.WorkspaceID)
 	if bindErr != nil {
 		form.GeneralError = bindErr.Error()
 		return h.renderForm(c, form, cats, true, bindErr.Error(), http.StatusUnprocessableEntity)
@@ -942,29 +976,47 @@ func fileExtensionBadgeClass(ext, contentType, filename string) string {
 }
 
 const (
+	categoryCodeIdentity      = "identity"
+	categoryCodeHealth        = "health"
+	categoryCodeFinance       = "finance"
 	categoryCodeTaxes         = "taxes"
+	categoryCodeProperty      = "property"
+	categoryCodeInsurance     = "insurance"
+	categoryCodeEducation     = "education"
+	categoryCodeWork          = "work"
+	categoryCodeLegal         = "legal"
 	categoryCodeUtilities     = "utilities"
 	categoryCodeInvoices      = "invoices"
-	categoryCodePayments      = "payments"
-	categoryCodeCertificates  = "certificates"
-	categoryCodeHealth        = "health"
+	categoryCodePhotos        = "photos"
 	documentMetaPartsCapacity = 3
 )
 
 func categoryIconTone(code string) string {
 	switch strings.ToLower(strings.TrimSpace(code)) {
+	case categoryCodeIdentity:
+		return "tone-indigo"
+	case categoryCodeHealth:
+		return "tone-teal"
+	case categoryCodeFinance:
+		return "tone-green"
 	case categoryCodeTaxes:
+		return "tone-red"
+	case categoryCodeProperty:
+		return "tone-amber"
+	case categoryCodeInsurance:
+		return "tone-blue"
+	case categoryCodeEducation:
+		return "tone-violet"
+	case categoryCodeWork:
+		return "tone-indigo"
+	case categoryCodeLegal:
 		return "tone-red"
 	case categoryCodeUtilities:
 		return "tone-blue"
 	case categoryCodeInvoices:
 		return "tone-green"
-	case categoryCodePayments:
-		return "tone-amber"
-	case categoryCodeCertificates:
-		return "tone-indigo"
-	case categoryCodeHealth:
-		return "tone-teal"
+	case categoryCodePhotos:
+		return "tone-pink"
 	default:
 		return "tone-violet"
 	}

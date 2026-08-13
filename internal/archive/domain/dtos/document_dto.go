@@ -82,6 +82,19 @@ type DocumentCategoryResponse struct {
 	Code      string `json:"code"`
 	LabelES   string `json:"label_es"`
 	SortOrder int    `json:"sort_order"`
+	IsSystem  bool   `json:"is_system"`
+}
+
+// CreateCategoryRequest creates a flat custom category in a workspace.
+type CreateCategoryRequest struct {
+	WorkspaceID string `json:"workspace_id,omitempty"`
+	LabelES     string `json:"label_es"`
+}
+
+// UpdateCategoryRequest renames a custom category.
+type UpdateCategoryRequest struct {
+	WorkspaceID string `json:"workspace_id,omitempty"`
+	LabelES     string `json:"label_es"`
 }
 
 // CategoryFolderResponse is a virtual folder (category) for the documents browser.
@@ -90,4 +103,5 @@ type CategoryFolderResponse struct {
 	LabelES   string `json:"label_es"`
 	SortOrder int    `json:"sort_order"`
 	Count     int    `json:"count"`
+	IsSystem  bool   `json:"is_system"`
 }

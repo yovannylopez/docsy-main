@@ -227,25 +227,28 @@ func auditUserDisplayName(userID *string, names map[string]string) string {
 
 func humanizeAuditAction(action string) string {
 	labels := map[string]string{
-		domain.AuditActionCreate:                   "Crear",
-		domain.AuditActionUpdate:                   "Actualizar",
-		domain.AuditActionDelete:                   "Eliminar",
-		domain.AuditActionRead:                     "Leer",
-		domain.AuditActionUserLoginAttempt:         "Intento de login",
-		domain.AuditActionUserLogout:               "Cierre de sesión",
-		domain.AuditActionUserCreated:              "Usuario creado",
-		domain.AuditActionPasswordChanged:          "Contraseña cambiada",
-		domain.AuditActionPasswordChangeFailed:     "Cambio de contraseña fallido",
-		domain.AuditActionArchiveDocumentCreated:   "Documento de archivo creado",
-		domain.AuditActionArchiveDocumentUpdated:   "Documento de archivo actualizado",
-		domain.AuditActionArchiveDocumentArchived:  "Documento de archivo archivado",
-		domain.AuditActionArchiveFileUploaded:      "Archivo adjunto subido",
-		domain.AuditActionArchiveFileDeleted:       "Archivo adjunto eliminado",
-		domain.AuditActionArchiveOCRSuggested:      "Sugerencias OCR de documento",
-		domain.AuditActionArchiveHouseholdCreated:  "Hogar de archivo creado",
-		domain.AuditActionArchiveMemberInvited:     "Miembro de archivo invitado",
-		domain.AuditActionArchiveMemberRoleUpdated: "Rol de miembro de archivo actualizado",
-		domain.AuditActionArchiveMemberRemoved:     "Miembro de archivo eliminado",
+		domain.AuditActionCreate:                     "Crear",
+		domain.AuditActionUpdate:                     "Actualizar",
+		domain.AuditActionDelete:                     "Eliminar",
+		domain.AuditActionRead:                       "Leer",
+		domain.AuditActionUserLoginAttempt:           "Intento de login",
+		domain.AuditActionUserLogout:                 "Cierre de sesión",
+		domain.AuditActionUserCreated:                "Usuario creado",
+		domain.AuditActionPasswordChanged:            "Contraseña cambiada",
+		domain.AuditActionPasswordChangeFailed:       "Cambio de contraseña fallido",
+		domain.AuditActionArchiveDocumentCreated:     "Documento de archivo creado",
+		domain.AuditActionArchiveDocumentUpdated:     "Documento de archivo actualizado",
+		domain.AuditActionArchiveDocumentArchived:    "Documento de archivo archivado",
+		domain.AuditActionArchiveFileUploaded:        "Archivo adjunto subido",
+		domain.AuditActionArchiveFileDeleted:         "Archivo adjunto eliminado",
+		domain.AuditActionArchiveOCRSuggested:        "Sugerencias OCR de documento",
+		domain.AuditActionArchiveHouseholdCreated:    "Hogar de archivo creado",
+		domain.AuditActionArchiveMemberInvited:       "Miembro de archivo invitado",
+		domain.AuditActionArchiveMemberRoleUpdated:   "Rol de miembro de archivo actualizado",
+		domain.AuditActionArchiveMemberRemoved:       "Miembro de archivo eliminado",
+		domain.AuditActionArchiveCategoryCreated:     "Categoría de archivo creada",
+		domain.AuditActionArchiveCategoryUpdated:     "Categoría de archivo actualizada",
+		domain.AuditActionArchiveCategoryDeactivated: "Categoría de archivo desactivada",
 	}
 	if label, ok := labels[action]; ok {
 		return label
@@ -307,6 +310,9 @@ func auditActionOptions() []weblayout.SelectOption {
 		{Value: domain.AuditActionArchiveMemberInvited, Label: "Miembro de archivo invitado"},
 		{Value: domain.AuditActionArchiveMemberRoleUpdated, Label: "Rol de miembro actualizado"},
 		{Value: domain.AuditActionArchiveMemberRemoved, Label: "Miembro de archivo eliminado"},
+		{Value: domain.AuditActionArchiveCategoryCreated, Label: "Categoría de archivo creada"},
+		{Value: domain.AuditActionArchiveCategoryUpdated, Label: "Categoría de archivo actualizada"},
+		{Value: domain.AuditActionArchiveCategoryDeactivated, Label: "Categoría de archivo desactivada"},
 	}
 }
 

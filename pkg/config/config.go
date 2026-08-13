@@ -166,7 +166,7 @@ func GetDatabaseConfig() DatabaseConfig {
 		Port:        GetEnv("DB_PORT", "5432"),
 		User:        GetEnv("DB_USER", "postgres"),
 		Password:    GetEnv("DB_PASSWORD", ""),
-		DBName:      GetEnv("DB_NAME", "go_boilerplate"),
+		DBName:      GetEnv("DB_NAME", "docsy-main-db"),
 		SSLMode:     GetEnv("DB_SSLMODE", "disable"), // SSL disabled in local
 	}
 }

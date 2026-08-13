@@ -50,17 +50,46 @@ func (m *mockDocumentRepo) Delete(ctx context.Context, workspaceID, documentID s
 	return m.Called(ctx, workspaceID, documentID).Error(0)
 }
 
-func (m *mockDocumentRepo) CategoryExists(ctx context.Context, code string) (bool, error) {
-	args := m.Called(ctx, code)
+func (m *mockDocumentRepo) CategoryExists(ctx context.Context, workspaceID, code string) (bool, error) {
+	args := m.Called(ctx, workspaceID, code)
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockDocumentRepo) ListCategories(ctx context.Context) ([]entities.DocumentCategory, error) {
-	args := m.Called(ctx)
+func (m *mockDocumentRepo) ListCategories(ctx context.Context, workspaceID string) ([]entities.DocumentCategory, error) {
+	args := m.Called(ctx, workspaceID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]entities.DocumentCategory), args.Error(1)
+}
+
+func (m *mockDocumentRepo) FindCategory(ctx context.Context, workspaceID, code string) (*entities.DocumentCategory, error) {
+	args := m.Called(ctx, workspaceID, code)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entities.DocumentCategory), args.Error(1)
+}
+
+func (m *mockDocumentRepo) CreateCategory(ctx context.Context, cat *entities.DocumentCategory) error {
+	return m.Called(ctx, cat).Error(0)
+}
+
+func (m *mockDocumentRepo) UpdateCategory(ctx context.Context, cat *entities.DocumentCategory) error {
+	return m.Called(ctx, cat).Error(0)
+}
+
+func (m *mockDocumentRepo) UpdateSystemCategory(ctx context.Context, cat *entities.DocumentCategory) error {
+	return m.Called(ctx, cat).Error(0)
+}
+
+func (m *mockDocumentRepo) DeactivateCategory(ctx context.Context, workspaceID, code string) error {
+	return m.Called(ctx, workspaceID, code).Error(0)
+}
+
+func (m *mockDocumentRepo) CountCustomCategories(ctx context.Context, workspaceID string) (int, error) {
+	args := m.Called(ctx, workspaceID)
+	return args.Int(0), args.Error(1)
 }
 
 func (m *mockDocumentRepo) CountByCategory(ctx context.Context, workspaceID string, status string) (map[string]int, error) {
@@ -107,11 +136,11 @@ func TestCreateDocumentUseCase_Creates(t *testing.T) {
 	stubs := archivetest.NewArchiveStubs()
 	uc := NewCreateDocumentUseCase(wsRepo, ensure, docRepo, audit)
 
-	docRepo.On("CategoryExists", mock.Anything, "taxes").Return(true, nil)
+	docRepo.On("CategoryExists", mock.Anything, mock.Anything, "taxes").Return(true, nil)
 	docRepo.On("Create", mock.Anything, mock.MatchedBy(func(d *entities.Document) bool {
 		return d.Title == "Predial" && d.CategoryCode == "taxes" && d.WorkspaceID == "ws-1"
 	})).Return(nil)
-	docRepo.On("ListCategories", mock.Anything).Return([]entities.DocumentCategory{
+	docRepo.On("ListCategories", mock.Anything, mock.Anything).Return([]entities.DocumentCategory{
 		{Code: "taxes", LabelES: "Impuestos"},
 	}, nil)
 	expectAuditAction(t, audit, authdomain.AuditActionArchiveDocumentCreated)
@@ -135,7 +164,7 @@ func TestListDocumentsUseCase_Lists(t *testing.T) {
 	doc.Title = "Gas"
 
 	docRepo.On("List", mock.Anything, "ws-1", mock.Anything).Return([]entities.Document{*doc}, 1, nil)
-	docRepo.On("ListCategories", mock.Anything).Return([]entities.DocumentCategory{
+	docRepo.On("ListCategories", mock.Anything, mock.Anything).Return([]entities.DocumentCategory{
 		{Code: "utilities", LabelES: "Servicios públicos"},
 	}, nil)
 	fileRepo.On("FindPrimaryByDocumentIDs", mock.Anything, []string{doc.ID}).Return(map[string]ports.DocumentPrimaryFile{
@@ -157,7 +186,7 @@ func TestListCategoryFoldersUseCase_ListsWithCounts(t *testing.T) {
 	ensure := stubEnsurePersonal(wsRepo)
 	uc := NewListCategoryFoldersUseCase(wsRepo, ensure, docRepo)
 
-	docRepo.On("ListCategories", mock.Anything).Return([]entities.DocumentCategory{
+	docRepo.On("ListCategories", mock.Anything, mock.Anything).Return([]entities.DocumentCategory{
 		{Code: "utilities", LabelES: "Servicios públicos", SortOrder: 1},
 		{Code: "taxes", LabelES: "Impuestos", SortOrder: 2},
 	}, nil)
@@ -185,7 +214,7 @@ func TestUpdateDocumentUseCase_Updates(t *testing.T) {
 	docRepo.On("Update", mock.Anything, mock.MatchedBy(func(d *entities.Document) bool {
 		return d.Title == "Predial 2026"
 	})).Return(nil)
-	docRepo.On("ListCategories", mock.Anything).Return([]entities.DocumentCategory{
+	docRepo.On("ListCategories", mock.Anything, mock.Anything).Return([]entities.DocumentCategory{
 		{Code: "taxes", LabelES: "Impuestos"},
 	}, nil)
 	expectAuditAction(t, audit, authdomain.AuditActionArchiveDocumentUpdated)
@@ -209,7 +238,7 @@ func TestArchiveDocumentUseCase_Archives(t *testing.T) {
 	docRepo.On("Update", mock.Anything, mock.MatchedBy(func(d *entities.Document) bool {
 		return d.Status == entities.DocumentStatusArchived
 	})).Return(nil)
-	docRepo.On("ListCategories", mock.Anything).Return([]entities.DocumentCategory{}, nil)
+	docRepo.On("ListCategories", mock.Anything, mock.Anything).Return([]entities.DocumentCategory{}, nil)
 	expectAuditAction(t, audit, authdomain.AuditActionArchiveDocumentArchived)
 
 	got, err := uc.Execute(context.Background(), "user-1", "", "d-1")

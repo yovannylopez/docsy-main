@@ -183,10 +183,13 @@ func setupListCategoriesOperation(generator *openapi.Generator) {
 	if pathItem, exists := spec.Paths["/api/v1/archive/categories"]; exists && pathItem.Get != nil {
 		op := pathItem.Get
 		op.Summary = "List document categories"
-		op.Description = "Returns active document categories for the archive module"
+		op.Description = "Returns active system categories plus flat custom categories for the workspace"
 		op.OperationID = "listArchiveCategories"
 		op.Tags = []string{"archive"}
 		op.Security = []map[string][]string{{"BearerAuth": {}}}
+		op.Parameters = []openapi.Parameter{
+			{Name: "workspace_id", In: "query", Schema: &openapi.Schema{Type: "string"}},
+		}
 		op.Responses = map[string]openapi.Response{
 			"200": {Description: "Categories retrieved successfully"},
 			"401": {Description: "Unauthorized", Content: openapi.JSONErrorRefContent(nil)},
