@@ -228,6 +228,22 @@ func (h *ArchiveHandler) ListDocuments(c echo.Context) error {
 	} else if ok {
 		filter.DueBefore = due
 	}
+	if dueFrom, ok, pErr := parseOptionalDate(c.QueryParam("due_from")); pErr != nil {
+		return responses.BadRequest(c, "invalid due_from date")
+	} else if ok {
+		filter.DueFrom = dueFrom
+	}
+	if dueTo, ok, pErr := parseOptionalDate(c.QueryParam("due_to")); pErr != nil {
+		return responses.BadRequest(c, "invalid due_to date")
+	} else if ok {
+		filter.DueTo = dueTo
+	}
+	if filter.From != nil && filter.To != nil && filter.To.Before(*filter.From) {
+		return responses.BadRequest(c, "to date must be on or after from date")
+	}
+	if filter.DueFrom != nil && filter.DueTo != nil && filter.DueTo.Before(*filter.DueFrom) {
+		return responses.BadRequest(c, "due_to must be on or after due_from")
+	}
 
 	if due := normalizeDueFilterParam(c.QueryParam("due")); due != "" {
 		filter.DueAlert = due

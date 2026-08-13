@@ -113,14 +113,7 @@ func (r *DocumentRepositoryAdapter) List(ctx context.Context, workspaceID string
 		args = append(args, filter.Category)
 		argN++
 	}
-	if q := strings.TrimSpace(filter.Query); q != "" {
-		where = append(where, fmt.Sprintf(
-			"(title ILIKE $%d OR COALESCE(issuer,'') ILIKE $%d OR COALESCE(reference_number,'') ILIKE $%d)",
-			argN, argN, argN,
-		))
-		args = append(args, "%"+q+"%")
-		argN++
-	}
+	where, args, argN = appendSearchQueryFilter(where, args, argN, filter.Query)
 	if filter.From != nil {
 		where = append(where, fmt.Sprintf("document_date >= $%d", argN))
 		args = append(args, filter.From.Format("2006-01-02"))
@@ -129,6 +122,16 @@ func (r *DocumentRepositoryAdapter) List(ctx context.Context, workspaceID string
 	if filter.To != nil {
 		where = append(where, fmt.Sprintf("document_date <= $%d", argN))
 		args = append(args, filter.To.Format("2006-01-02"))
+		argN++
+	}
+	if filter.DueFrom != nil {
+		where = append(where, fmt.Sprintf("due_date IS NOT NULL AND due_date >= $%d", argN))
+		args = append(args, filter.DueFrom.Format("2006-01-02"))
+		argN++
+	}
+	if filter.DueTo != nil {
+		where = append(where, fmt.Sprintf("due_date IS NOT NULL AND due_date <= $%d", argN))
+		args = append(args, filter.DueTo.Format("2006-01-02"))
 		argN++
 	}
 	if filter.DueBefore != nil {
@@ -532,6 +535,50 @@ func (r *DocumentRepositoryAdapter) CountDueAlertsByCategory(
 		}
 	}
 	return out, nil
+}
+
+func appendSearchQueryFilter(where []string, args []any, argN int, rawQuery string) ([]string, []any, int) {
+	tokens := entities.TokenizeSearchQuery(rawQuery)
+	if len(tokens) == 0 {
+		return where, args, argN
+	}
+	for _, token := range tokens {
+		pattern := "%" + escapeILIKEPattern(token) + "%"
+		textMatch := fmt.Sprintf(
+			`(title ILIKE $%d ESCAPE '\'
+			  OR COALESCE(issuer, '') ILIKE $%d ESCAPE '\'
+			  OR COALESCE(reference_number, '') ILIKE $%d ESCAPE '\'
+			  OR COALESCE(notes, '') ILIKE $%d ESCAPE '\'
+			  OR COALESCE(extra_fields::text, '') ILIKE $%d ESCAPE '\'
+			  OR EXISTS (
+			    SELECT 1 FROM archive_document_categories c
+			    WHERE c.code = archive_documents.category_code
+			      AND c.is_active = true
+			      AND (c.is_system = true OR c.workspace_id = archive_documents.workspace_id)
+			      AND c.label_es ILIKE $%d ESCAPE '\'
+			  ))`,
+			argN, argN, argN, argN, argN, argN,
+		)
+		if entities.IsYearToken(token) {
+			yearIdx := argN + 1
+			where = append(where, fmt.Sprintf(
+				`(%s OR to_char(document_date, 'YYYY') = $%d OR to_char(due_date, 'YYYY') = $%d)`,
+				textMatch, yearIdx, yearIdx,
+			))
+			args = append(args, pattern, token)
+			argN += 2
+			continue
+		}
+		where = append(where, textMatch)
+		args = append(args, pattern)
+		argN++
+	}
+	return where, args, argN
+}
+
+func escapeILIKEPattern(s string) string {
+	replacer := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return replacer.Replace(s)
 }
 
 func nullStr(s *string) any {

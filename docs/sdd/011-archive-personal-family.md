@@ -78,11 +78,14 @@ Contiene:
 7. Permisos: `archive.read`, `archive.write`, `archive.manage`.
 8. Auditoría de create/update/archive vía audit existente (`auth.AuditRepository`; acciones `archive.*`; fallo de audit no bloquea la operación).
 9. Puerto `DocumentStorage` + implementación local en disco (`DOCUMENT_PATH`).
+10. Búsqueda global por `q` (AND de tokens sobre título, emisor, referencia, notas, extras, etiqueta de categoría; años `YYYY` también matchean `document_date`/`due_date`).
+11. Filtros de rango de fechas en listado: `from`/`to` (`document_date`) y `due_from`/`due_to` (`due_date`); presets este mes / este año / últimos 90 días.
 
 ### Excluye
 
 - OCR / DIAN / CUFE automático.
 - Recordatorios de vencimiento por email/push (futuro). MVP in-app: badges «Vence pronto» / «Vencido», franja resumen y filtro `?due=upcoming|expired` (ventana 7 días).
+- Filtros avanzados de montos y full-text search Postgres (`tsvector`); sin indexar contenido OCR del archivo.
 - Hogar e invitaciones (Iteración D — **hecho**).
 - Panel super admin / catálogo de módulos (SDD `platform`).
 - TRD/AGN, planes SaaS, cuotas de almacenamiento en nube (S3/minio = futuro).
@@ -192,7 +195,7 @@ Las categorías son **planas** (sin jerarquía). Además del seed de sistema, ca
 | GET | `/documents/:id/files/:fileId` | `archive.read` |
 | DELETE | `/documents/:id/files/:fileId` | `archive.write` |
 
-Filtros listado: `workspace_id`, `category`, `q`, `from`, `to`, `due_before`, `status`, `limit`, `offset`.
+Filtros listado: `workspace_id`, `category`, `q`, `from`, `to`, `due_from`, `due_to`, `due_before`, `due`, `status`, `limit`, `offset`.
 
 ### Web HTMX
 

@@ -46,6 +46,8 @@ const (
 	msgOCRFailed             = "No se pudo analizar el archivo con OCR. Intenta de nuevo."
 	msgInvalidAmount         = "el monto no es válido"
 	msgInvalidDate           = "hay una fecha con formato inválido (usa AAAA-MM-DD)"
+	msgInvalidDateRange      = "la fecha «hasta» debe ser igual o posterior a «desde» (fecha del documento)"
+	msgInvalidDueDateRange   = "la fecha «hasta» debe ser igual o posterior a «desde» (vencimiento)"
 	msgWorkspacesLoadError   = "No se pudieron cargar tus archivos. Intenta de nuevo."
 	msgHouseholdCreateError  = "No se pudo crear el hogar. Verifica los datos e intenta de nuevo."
 	msgHouseholdCreated      = "Hogar creado correctamente."
@@ -58,6 +60,7 @@ const (
 	defaultFormCategory      = "other"
 	docsModeFolders          = "folders"
 	docsModeDocuments        = "documents"
+	docsDatePresetLastDays   = 90
 )
 
 // ArchivePageData holds view data for /archivo.
@@ -134,6 +137,14 @@ type DocumentsListPageData struct {
 	DueExpired     int
 	DueUpcomingURL string
 	DueExpiredURL  string
+	DateFrom       string // document_date from (YYYY-MM-DD)
+	DateTo         string // document_date to
+	DueDateFrom    string // due_date from
+	DueDateTo      string // due_date to
+	HasDateFilter  bool
+	PresetMonthURL string
+	PresetYearURL  string
+	Preset90URL    string
 	Error          string
 	Success        string
 	Pagination     weblayout.PaginationData
@@ -508,91 +519,77 @@ func (h *ArchivePageHandler) ListDocuments(c echo.Context) error {
 		})
 	}
 
-	query := strings.TrimSpace(c.QueryParam("q"))
-	category := strings.TrimSpace(c.QueryParam("category"))
-	status := strings.TrimSpace(c.QueryParam("status"))
-	dueFilter := normalizeDueFilterParam(c.QueryParam("due"))
-	view := strings.TrimSpace(strings.ToLower(c.QueryParam("view")))
-	if view != "list" {
-		view = "grid"
-	}
-	workspaceID := workspaceIDParam(c)
-	if status == "" {
-		status = entities.DocumentStatusActive
-	}
-
+	q := parseDocsListQuery(c)
 	workspaces, _ := h.listWorkspacesUC.Execute(c.Request().Context(), userID)
-	cats := h.loadCategories(c, workspaceID)
-	categoryLabel := categoryLabelFromList(cats, category)
+	cats := h.loadCategories(c, q.WorkspaceID)
+	base := newDocsListPageData(c, q, workspaces, cats)
 
-	base := DocumentsListPageData{
-		AppLayoutData:  weblayout.AppLayoutFromEcho(c, archiveDocsTitle, archiveDocsSubtitle, "/archivo/documentos"),
-		WorkspaceID:    workspaceID,
-		Workspaces:     workspaces,
-		Query:          query,
-		Category:       category,
-		CategoryLabel:  categoryLabel,
-		Status:         status,
-		View:           view,
-		DueFilter:      dueFilter,
-		DueFilterLabel: dueFilterLabel(dueFilter),
-		BrowseURL:      documentsBrowseURL(workspaceID, status),
-		CreateURL:      documentsCreateURL(workspaceID, category),
-		Categories:     cats,
-		Success:        archiveFlash(c),
+	if msg := q.dateFilterError(); msg != "" {
+		base.Mode = docsModeDocuments
+		base.Error = msg
+		return h.renderDocsList(c, base)
 	}
-	base.DueUpcomingURL = documentsDueURL(workspaceID, status, view, category, query, entities.DueAlertUpcoming)
-	base.DueExpiredURL = documentsDueURL(workspaceID, status, view, category, query, entities.DueAlertExpired)
 
-	if upcoming, expired, dueErr := h.listDocsUC.CountDueAlerts(c.Request().Context(), userID, workspaceID, status); dueErr == nil {
+	if upcoming, expired, dueErr := h.listDocsUC.CountDueAlerts(
+		c.Request().Context(), userID, q.WorkspaceID, q.Status,
+	); dueErr == nil {
 		base.DueUpcoming = upcoming
 		base.DueExpired = expired
 	}
 
-	// Virtual folders home: no category, search, or due filter.
-	if category == "" && query == "" && dueFilter == "" {
-		folders, folderErr := h.listFoldersUC.Execute(c.Request().Context(), userID, workspaceID, status)
-		if folderErr != nil {
-			base.Mode = docsModeFolders
-			base.Error = msgDocsLoadError
-			return h.renderDocsList(c, base)
-		}
-		items := make([]CategoryFolderItem, 0, len(folders))
-		totalDocs := 0
-		for _, f := range folders {
-			totalDocs += f.Count
-			items = append(items, toFolderItem(f, workspaceID, status, view))
-		}
+	if !q.hasListFilter() {
+		return h.renderDocsFolders(c, userID, q, base)
+	}
+	return h.renderDocsFiltered(c, userID, q, params, base)
+}
+
+func (h *ArchivePageHandler) renderDocsFolders(
+	c echo.Context,
+	userID string,
+	q docsListQuery,
+	base DocumentsListPageData,
+) error {
+	folders, folderErr := h.listFoldersUC.Execute(c.Request().Context(), userID, q.WorkspaceID, q.Status)
+	if folderErr != nil {
 		base.Mode = docsModeFolders
-		base.Folders = items
-		base.Total = totalDocs
+		base.Error = msgDocsLoadError
 		return h.renderDocsList(c, base)
 	}
+	items := make([]CategoryFolderItem, 0, len(folders))
+	totalDocs := 0
+	for _, f := range folders {
+		totalDocs += f.Count
+		items = append(items, toFolderItem(f, q.WorkspaceID, q.Status, q.View))
+	}
+	base.Mode = docsModeFolders
+	base.Folders = items
+	base.Total = totalDocs
+	return h.renderDocsList(c, base)
+}
 
-	docs, total, listErr := h.listDocsUC.Execute(c.Request().Context(), userID, dtos.ListDocumentsFilter{
-		WorkspaceID: workspaceID,
-		Category:    category,
-		Query:       query,
-		Status:      status,
-		DueAlert:    dueFilter,
-		Limit:       params.Limit,
-		Offset:      params.Offset,
-	})
+func (h *ArchivePageHandler) renderDocsFiltered(
+	c echo.Context,
+	userID string,
+	q docsListQuery,
+	params *pagination.Params,
+	base DocumentsListPageData,
+) error {
+	docs, total, listErr := h.listDocsUC.Execute(c.Request().Context(), userID, q.toListFilter(params))
 	if listErr != nil {
 		base.Mode = docsModeDocuments
 		base.Error = msgDocsLoadError
 		return h.renderDocsList(c, base)
 	}
-
 	items := make([]DocumentListItem, 0, len(docs))
 	for i := range docs {
-		items = append(items, toListItem(&docs[i], workspaceID))
+		items = append(items, toListItem(&docs[i], q.WorkspaceID))
 	}
-
 	base.Mode = docsModeDocuments
 	base.Documents = items
 	base.Total = total
-	base.Pagination = weblayout.NewPaginationData(params.Offset, params.Limit, total, "/archivo/documentos", c.QueryParams())
+	base.Pagination = weblayout.NewPaginationData(
+		params.Offset, params.Limit, total, "/archivo/documentos", c.QueryParams(),
+	)
 	return h.renderDocsList(c, base)
 }
 
@@ -1090,30 +1087,236 @@ func documentsBrowseURL(workspaceID, status string) string {
 	return "/archivo/documentos?" + q.Encode()
 }
 
-func documentsDueURL(workspaceID, status, view, category, query, due string) string {
+// docsListQuery holds parsed query params for the documents browser.
+type docsListQuery struct {
+	Query       string
+	Category    string
+	Status      string
+	DueFilter   string
+	View        string
+	WorkspaceID string
+	DateFrom    string
+	DateTo      string
+	DueFrom     string
+	DueTo       string
+	dateFromT   *time.Time
+	dateToT     *time.Time
+	dueFromT    *time.Time
+	dueToT      *time.Time
+	dateFromOK  bool
+	dateToOK    bool
+	dueFromOK   bool
+	dueToOK     bool
+	dateParseOK bool
+}
+
+func parseDocsListQuery(c echo.Context) docsListQuery {
+	q := docsListQuery{
+		Query:       strings.TrimSpace(c.QueryParam("q")),
+		Category:    strings.TrimSpace(c.QueryParam("category")),
+		Status:      strings.TrimSpace(c.QueryParam("status")),
+		DueFilter:   normalizeDueFilterParam(c.QueryParam("due")),
+		View:        strings.TrimSpace(strings.ToLower(c.QueryParam("view"))),
+		WorkspaceID: workspaceIDParam(c),
+		DateFrom:    strings.TrimSpace(c.QueryParam("from")),
+		DateTo:      strings.TrimSpace(c.QueryParam("to")),
+		DueFrom:     strings.TrimSpace(c.QueryParam("due_from")),
+		DueTo:       strings.TrimSpace(c.QueryParam("due_to")),
+		dateParseOK: true,
+	}
+	if q.View != "list" {
+		q.View = "grid"
+	}
+	if q.Status == "" {
+		q.Status = entities.DocumentStatusActive
+	}
+
+	var err error
+	q.dateFromT, q.dateFromOK, err = parseOptionalDate(q.DateFrom)
+	if err != nil {
+		q.dateParseOK = false
+	}
+	q.dateToT, q.dateToOK, err = parseOptionalDate(q.DateTo)
+	if err != nil {
+		q.dateParseOK = false
+	}
+	q.dueFromT, q.dueFromOK, err = parseOptionalDate(q.DueFrom)
+	if err != nil {
+		q.dateParseOK = false
+	}
+	q.dueToT, q.dueToOK, err = parseOptionalDate(q.DueTo)
+	if err != nil {
+		q.dateParseOK = false
+	}
+	return q
+}
+
+func (q docsListQuery) hasDateFilter() bool {
+	return q.DateFrom != "" || q.DateTo != "" || q.DueFrom != "" || q.DueTo != ""
+}
+
+func (q docsListQuery) hasListFilter() bool {
+	return q.Category != "" || q.Query != "" || q.DueFilter != "" || q.hasDateFilter()
+}
+
+func (q docsListQuery) dateFilterError() string {
+	if !q.dateParseOK {
+		return msgInvalidDate
+	}
+	if q.dateFromOK && q.dateToOK && q.dateToT.Before(*q.dateFromT) {
+		return msgInvalidDateRange
+	}
+	if q.dueFromOK && q.dueToOK && q.dueToT.Before(*q.dueFromT) {
+		return msgInvalidDueDateRange
+	}
+	return ""
+}
+
+func (q docsListQuery) urlParams() docsListURLParams {
+	return docsListURLParams{
+		WorkspaceID: q.WorkspaceID,
+		Status:      q.Status,
+		View:        q.View,
+		Category:    q.Category,
+		Query:       q.Query,
+		Due:         q.DueFilter,
+		DateFrom:    q.DateFrom,
+		DateTo:      q.DateTo,
+		DueFrom:     q.DueFrom,
+		DueTo:       q.DueTo,
+	}
+}
+
+func (q docsListQuery) toListFilter(params *pagination.Params) dtos.ListDocumentsFilter {
+	filter := dtos.ListDocumentsFilter{
+		WorkspaceID: q.WorkspaceID,
+		Category:    q.Category,
+		Query:       q.Query,
+		Status:      q.Status,
+		DueAlert:    q.DueFilter,
+		Limit:       params.Limit,
+		Offset:      params.Offset,
+	}
+	if q.dateFromOK {
+		filter.From = q.dateFromT
+	}
+	if q.dateToOK {
+		filter.To = q.dateToT
+	}
+	if q.dueFromOK {
+		filter.DueFrom = q.dueFromT
+	}
+	if q.dueToOK {
+		filter.DueTo = q.dueToT
+	}
+	return filter
+}
+
+func newDocsListPageData(
+	c echo.Context,
+	q docsListQuery,
+	workspaces []dtos.WorkspaceResponse,
+	cats []dtos.DocumentCategoryResponse,
+) DocumentsListPageData {
+	base := DocumentsListPageData{
+		AppLayoutData:  weblayout.AppLayoutFromEcho(c, archiveDocsTitle, archiveDocsSubtitle, "/archivo/documentos"),
+		WorkspaceID:    q.WorkspaceID,
+		Workspaces:     workspaces,
+		Query:          q.Query,
+		Category:       q.Category,
+		CategoryLabel:  categoryLabelFromList(cats, q.Category),
+		Status:         q.Status,
+		View:           q.View,
+		DueFilter:      q.DueFilter,
+		DueFilterLabel: dueFilterLabel(q.DueFilter),
+		DateFrom:       q.DateFrom,
+		DateTo:         q.DateTo,
+		DueDateFrom:    q.DueFrom,
+		DueDateTo:      q.DueTo,
+		HasDateFilter:  q.hasDateFilter(),
+		BrowseURL:      documentsBrowseURL(q.WorkspaceID, q.Status),
+		CreateURL:      documentsCreateURL(q.WorkspaceID, q.Category),
+		Categories:     cats,
+		Success:        archiveFlash(c),
+	}
+	links := q.urlParams()
+	base.DueUpcomingURL = documentsListURL(links.withDue(entities.DueAlertUpcoming))
+	base.DueExpiredURL = documentsListURL(links.withDue(entities.DueAlertExpired))
+	base.PresetMonthURL, base.PresetYearURL, base.Preset90URL = documentsDatePresetURLs(links, time.Now())
+	return base
+}
+
+// docsListURLParams builds shared query strings for documents list links.
+type docsListURLParams struct {
+	WorkspaceID string
+	Status      string
+	View        string
+	Category    string
+	Query       string
+	Due         string
+	DateFrom    string
+	DateTo      string
+	DueFrom     string
+	DueTo       string
+}
+
+func (p docsListURLParams) withDue(due string) docsListURLParams {
+	p.Due = due
+	return p
+}
+
+func documentsListURL(p docsListURLParams) string {
 	q := url.Values{}
-	if due != "" {
-		q.Set("due", due)
+	if p.Due != "" {
+		q.Set("due", p.Due)
 	}
-	if status != "" && status != entities.DocumentStatusActive {
-		q.Set("status", status)
+	if p.Status != "" && p.Status != entities.DocumentStatusActive {
+		q.Set("status", p.Status)
 	}
-	if workspaceID != "" {
-		q.Set("workspace_id", workspaceID)
+	if p.WorkspaceID != "" {
+		q.Set("workspace_id", p.WorkspaceID)
 	}
-	if view == "list" {
+	if p.View == "list" {
 		q.Set("view", "list")
 	}
-	if category != "" {
-		q.Set("category", category)
+	if p.Category != "" {
+		q.Set("category", p.Category)
 	}
-	if query != "" {
-		q.Set("q", query)
+	if p.Query != "" {
+		q.Set("q", p.Query)
+	}
+	if p.DateFrom != "" {
+		q.Set("from", p.DateFrom)
+	}
+	if p.DateTo != "" {
+		q.Set("to", p.DateTo)
+	}
+	if p.DueFrom != "" {
+		q.Set("due_from", p.DueFrom)
+	}
+	if p.DueTo != "" {
+		q.Set("due_to", p.DueTo)
 	}
 	if len(q) == 0 {
 		return "/archivo/documentos"
 	}
 	return "/archivo/documentos?" + q.Encode()
+}
+
+func documentsDatePresetURLs(p docsListURLParams, now time.Time) (monthURL, yearURL, last90URL string) {
+	loc := now.Location()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
+	yearStart := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, loc)
+	last90 := today.AddDate(0, 0, -docsDatePresetLastDays)
+
+	build := func(from, to time.Time) string {
+		cp := p
+		cp.DateFrom = from.Format("2006-01-02")
+		cp.DateTo = to.Format("2006-01-02")
+		return documentsListURL(cp)
+	}
+	return build(monthStart, today), build(yearStart, today), build(last90, today)
 }
 
 func normalizeDueFilterParam(raw string) string {

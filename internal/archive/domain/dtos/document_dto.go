@@ -70,8 +70,10 @@ type ListDocumentsFilter struct {
 	WorkspaceID string
 	Category    string
 	Query       string
-	From        *time.Time
-	To          *time.Time
+	From        *time.Time // document_date >=
+	To          *time.Time // document_date <=
+	DueFrom     *time.Time // due_date >=
+	DueTo       *time.Time // due_date <=
 	DueBefore   *time.Time
 	// DueAlert filters by due window: "upcoming" (today..+7d) or "expired" (before today).
 	DueAlert string
