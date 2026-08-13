@@ -4,6 +4,9 @@
   <div class="files-grid">
     {{range .Folders}}
     <a href="{{.OpenURL}}" class="folder-card group">
+      {{if gt .AlertCount 0}}
+      <span class="folder-alert-badge {{.AlertTone}}" title="{{.AlertLabel}}">{{.AlertCount}}</span>
+      {{end}}
       <span class="folder-type-icon {{.IconTone}}" aria-hidden="true">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" focusable="false">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75A2.25 2.25 0 016 4.5h3.379a2.25 2.25 0 011.59.659l.872.871c.21.21.495.328.795.328H18A2.25 2.25 0 0120.25 8.25v9A2.25 2.25 0 0118 19.5H6a2.25 2.25 0 01-2.25-2.25v-10.5z" />
@@ -52,6 +55,11 @@
                 <div class="min-w-0">
                   <div class="flex items-center gap-2 min-w-0">
                     <a href="{{.EditURL}}" class="text-foreground hover:text-primary block truncate text-sm font-semibold">{{.Title}}</a>
+                    {{if eq .DueStatus "expired"}}
+                    <span class="due-badge due-badge-expired">{{.DueBadgeLabel}}</span>
+                    {{else if eq .DueStatus "upcoming"}}
+                    <span class="due-badge due-badge-upcoming">{{.DueBadgeLabel}}</span>
+                    {{end}}
                     {{if .HasAttachment}}
                     <span class="file-ext-badge file-ext-badge-inline {{.FileBadgeClass}}" title="Archivo {{.FileExtension}}">{{.FileExtension}}</span>
                     {{end}}
@@ -90,7 +98,11 @@
   <div class="files-grid">
     {{range .Documents}}
     <a href="{{.EditURL}}" class="file-card group">
-      {{if eq .Status "archived"}}
+      {{if eq .DueStatus "expired"}}
+      <span class="file-card-badge due-badge-expired">{{.DueBadgeLabel}}</span>
+      {{else if eq .DueStatus "upcoming"}}
+      <span class="file-card-badge due-badge-upcoming">{{.DueBadgeLabel}}</span>
+      {{else if eq .Status "archived"}}
       <span class="file-card-badge">Archivado</span>
       {{end}}
       {{if .HasAttachment}}
@@ -116,7 +128,7 @@
   <div class="empty-state-icon">{{template "icons/glyph-folder" .}}</div>
   <p class="text-foreground text-base font-semibold">No hay documentos</p>
   <p class="text-muted-foreground mx-auto mt-1 max-w-md text-sm">
-    {{if or .Query .Category}}No se encontraron resultados con esos filtros.{{else}}Empieza registrando una factura, recibo o certificado.{{end}}
+    {{if or .Query .Category .DueFilter}}No se encontraron resultados con esos filtros.{{else}}Empieza registrando una factura, recibo o certificado.{{end}}
   </p>
   {{if not .Query}}
   <a href="{{.CreateURL}}" class="btn btn-primary mt-5 inline-flex rounded-xl px-4 py-2.5 text-sm font-medium">Nuevo documento</a>

@@ -14,6 +14,8 @@ import (
 	"github.com/yovannylopez/docsy-main/internal/archive/domain/entities"
 )
 
+const sqlWorkspaceIDEq = "workspace_id = $1"
+
 // DocumentRepositoryAdapter implements DocumentRepository with sqlx.
 type DocumentRepositoryAdapter struct {
 	db *sqlx.DB
@@ -93,7 +95,7 @@ func (r documentRow) toEntity() entities.Document {
 
 // List returns documents matching filters for a workspace.
 func (r *DocumentRepositoryAdapter) List(ctx context.Context, workspaceID string, filter dtos.ListDocumentsFilter) ([]entities.Document, int, error) {
-	where := []string{"workspace_id = $1"}
+	where := []string{sqlWorkspaceIDEq}
 	args := []any{workspaceID}
 	argN := 2
 
@@ -101,7 +103,7 @@ func (r *DocumentRepositoryAdapter) List(ctx context.Context, workspaceID string
 	if status == "" {
 		status = entities.DocumentStatusActive
 	}
-	if status != "all" {
+	if status != entities.DocumentStatusAll {
 		where = append(where, fmt.Sprintf("status = $%d", argN))
 		args = append(args, status)
 		argN++
@@ -133,6 +135,18 @@ func (r *DocumentRepositoryAdapter) List(ctx context.Context, workspaceID string
 		where = append(where, fmt.Sprintf("due_date IS NOT NULL AND due_date <= $%d", argN))
 		args = append(args, filter.DueBefore.Format("2006-01-02"))
 		argN++
+	}
+	switch strings.ToLower(strings.TrimSpace(filter.DueAlert)) {
+	case entities.DueAlertExpired:
+		where = append(where, fmt.Sprintf("due_date IS NOT NULL AND due_date < $%d", argN))
+		args = append(args, time.Now().Format("2006-01-02"))
+		argN++
+	case entities.DueAlertUpcoming:
+		today := time.Now().Format("2006-01-02")
+		horizon := time.Now().AddDate(0, 0, entities.DueSoonWindowDays).Format("2006-01-02")
+		where = append(where, fmt.Sprintf("due_date IS NOT NULL AND due_date >= $%d AND due_date <= $%d", argN, argN+1))
+		args = append(args, today, horizon)
+		argN += 2
 	}
 
 	whereSQL := strings.Join(where, " AND ")
@@ -388,14 +402,14 @@ func (r *DocumentRepositoryAdapter) CountCustomCategories(ctx context.Context, w
 
 // CountByCategory returns document counts per category_code for a workspace.
 func (r *DocumentRepositoryAdapter) CountByCategory(ctx context.Context, workspaceID string, status string) (map[string]int, error) {
-	where := []string{"workspace_id = $1"}
+	where := []string{sqlWorkspaceIDEq}
 	args := []any{workspaceID}
 	argN := 2
 
 	if status == "" {
 		status = entities.DocumentStatusActive
 	}
-	if status != "all" {
+	if status != entities.DocumentStatusAll {
 		where = append(where, fmt.Sprintf("status = $%d", argN))
 		args = append(args, status)
 	}
@@ -416,6 +430,106 @@ func (r *DocumentRepositoryAdapter) CountByCategory(ctx context.Context, workspa
 	out := make(map[string]int, len(rows))
 	for _, row := range rows {
 		out[row.CategoryCode] = row.N
+	}
+	return out, nil
+}
+
+// CountDueAlerts returns upcoming and expired document counts for a workspace.
+func (r *DocumentRepositoryAdapter) CountDueAlerts(ctx context.Context, workspaceID, status string) (upcoming, expired int, err error) {
+	where := []string{sqlWorkspaceIDEq, "due_date IS NOT NULL"}
+	args := []any{workspaceID}
+	argN := 2
+
+	if status == "" {
+		status = entities.DocumentStatusActive
+	}
+	if status != entities.DocumentStatusAll {
+		where = append(where, fmt.Sprintf("status = $%d", argN))
+		args = append(args, status)
+		argN++
+	}
+
+	todayIdx := argN
+	horizonIdx := argN + 1
+	args = append(args,
+		time.Now().Format("2006-01-02"),
+		time.Now().AddDate(0, 0, entities.DueSoonWindowDays).Format("2006-01-02"),
+	)
+
+	q := fmt.Sprintf(`
+		SELECT
+			COUNT(*) FILTER (WHERE due_date < $%d) AS expired,
+			COUNT(*) FILTER (WHERE due_date >= $%d AND due_date <= $%d) AS upcoming
+		FROM archive_documents
+		WHERE %s`,
+		todayIdx, todayIdx, horizonIdx, strings.Join(where, " AND "),
+	)
+
+	var row struct {
+		Expired  int `db:"expired"`
+		Upcoming int `db:"upcoming"`
+	}
+	if err := r.db.GetContext(ctx, &row, q, args...); err != nil {
+		return 0, 0, fmt.Errorf("count due alerts: %w", err)
+	}
+	return row.Upcoming, row.Expired, nil
+}
+
+// CountDueAlertsByCategory returns upcoming/expired due counts keyed by category_code.
+func (r *DocumentRepositoryAdapter) CountDueAlertsByCategory(
+	ctx context.Context,
+	workspaceID, status string,
+) (map[string]dtos.CategoryDueAlertCounts, error) {
+	where := []string{sqlWorkspaceIDEq, "due_date IS NOT NULL"}
+	args := []any{workspaceID}
+	argN := 2
+
+	if status == "" {
+		status = entities.DocumentStatusActive
+	}
+	if status != entities.DocumentStatusAll {
+		where = append(where, fmt.Sprintf("status = $%d", argN))
+		args = append(args, status)
+		argN++
+	}
+
+	todayIdx := argN
+	horizonIdx := argN + 1
+	args = append(args,
+		time.Now().Format("2006-01-02"),
+		time.Now().AddDate(0, 0, entities.DueSoonWindowDays).Format("2006-01-02"),
+	)
+
+	q := fmt.Sprintf(`
+		SELECT
+			category_code,
+			COUNT(*) FILTER (WHERE due_date < $%d) AS expired,
+			COUNT(*) FILTER (WHERE due_date >= $%d AND due_date <= $%d) AS upcoming
+		FROM archive_documents
+		WHERE %s
+		GROUP BY category_code`,
+		todayIdx, todayIdx, horizonIdx, strings.Join(where, " AND "),
+	)
+
+	type row struct {
+		CategoryCode string `db:"category_code"`
+		Expired      int    `db:"expired"`
+		Upcoming     int    `db:"upcoming"`
+	}
+	var rows []row
+	if err := r.db.SelectContext(ctx, &rows, q, args...); err != nil {
+		return nil, fmt.Errorf("count due alerts by category: %w", err)
+	}
+
+	out := make(map[string]dtos.CategoryDueAlertCounts, len(rows))
+	for _, row := range rows {
+		if row.Expired == 0 && row.Upcoming == 0 {
+			continue
+		}
+		out[row.CategoryCode] = dtos.CategoryDueAlertCounts{
+			Upcoming: row.Upcoming,
+			Expired:  row.Expired,
+		}
 	}
 	return out, nil
 }

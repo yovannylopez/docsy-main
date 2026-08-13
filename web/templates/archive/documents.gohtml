@@ -11,11 +11,14 @@
       Archivo
     </a>
     <span aria-hidden="true">/</span>
-    {{if or .Category .Query}}
+    {{if or .Category .Query .DueFilter}}
     <a href="{{.BrowseURL}}" class="hover:text-foreground transition-colors">Documentos</a>
     {{if .CategoryLabel}}
     <span aria-hidden="true">/</span>
     <span class="text-foreground font-medium">{{.CategoryLabel}}</span>
+    {{else if .DueFilterLabel}}
+    <span aria-hidden="true">/</span>
+    <span class="text-foreground font-medium">{{.DueFilterLabel}}</span>
     {{else if .Query}}
     <span aria-hidden="true">/</span>
     <span class="text-foreground font-medium">Búsqueda</span>
@@ -28,11 +31,11 @@
   <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
     <div>
       <h1 class="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
-        {{if .CategoryLabel}}{{.CategoryLabel}}{{else if .Query}}Resultados{{else}}{{.Title}}{{end}}
+        {{if .CategoryLabel}}{{.CategoryLabel}}{{else if .DueFilterLabel}}{{.DueFilterLabel}}{{else if .Query}}Resultados{{else}}{{.Title}}{{end}}
       </h1>
-      {{if .Subtitle}}{{if not .CategoryLabel}}{{if not .Query}}
+      {{if .Subtitle}}{{if not .CategoryLabel}}{{if not .Query}}{{if not .DueFilterLabel}}
       <p class="text-muted-foreground mt-1 text-sm sm:text-base">{{.Subtitle}}</p>
-      {{end}}{{end}}{{end}}
+      {{end}}{{end}}{{end}}{{end}}
     </div>
     {{if eq .Mode "folders"}}
     <p class="text-muted-foreground text-sm">{{len .Folders}} categorías · {{.Total}} documentos</p>
@@ -46,10 +49,32 @@
   {{end}}
   {{template "partials/alert-success-message" .Success}}
 
+  {{if or (gt .DueUpcoming 0) (gt .DueExpired 0)}}
+  <div class="due-alerts-strip" role="status">
+    {{if gt .DueUpcoming 0}}
+    <a href="{{.DueUpcomingURL}}" class="due-alert-chip due-alert-upcoming {{if eq .DueFilter "upcoming"}}is-active{{end}}">
+      {{.DueUpcoming}} por vencer
+    </a>
+    {{end}}
+    {{if and (gt .DueUpcoming 0) (gt .DueExpired 0)}}
+    <span class="due-alert-sep" aria-hidden="true">·</span>
+    {{end}}
+    {{if gt .DueExpired 0}}
+    <a href="{{.DueExpiredURL}}" class="due-alert-chip due-alert-expired {{if eq .DueFilter "expired"}}is-active{{end}}">
+      {{if eq .DueExpired 1}}1 vencido{{else}}{{.DueExpired}} vencidos{{end}}
+    </a>
+    {{end}}
+    {{if .DueFilter}}
+    <a href="{{.BrowseURL}}" class="due-alert-clear">Ver todos</a>
+    {{end}}
+  </div>
+  {{end}}
+
   <div class="files-toolbar bg-card border-border rounded-2xl border p-3 sm:p-4">
     <form method="get" action="/archivo/documentos" class="flex flex-col gap-3 lg:flex-row lg:items-center">
       {{if .WorkspaceID}}<input type="hidden" name="workspace_id" value="{{.WorkspaceID}}" />{{end}}
       <input type="hidden" name="view" value="{{if .View}}{{.View}}{{else}}grid{{end}}" />
+      {{if .DueFilter}}<input type="hidden" name="due" value="{{.DueFilter}}" />{{end}}
       {{if and .Category (not .Query)}}
       <input type="hidden" name="category" value="{{.Category}}" />
       {{end}}
@@ -96,7 +121,7 @@
         {{if eq .Mode "documents"}}
         <div class="files-view-toggle border-border bg-background inline-flex rounded-xl border p-1" role="group" aria-label="Vista">
           <a
-            href="?view=grid{{if .Query}}&q={{.Query}}{{end}}{{if .Category}}&category={{.Category}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .WorkspaceID}}&workspace_id={{.WorkspaceID}}{{end}}"
+            href="?view=grid{{if .Query}}&q={{.Query}}{{end}}{{if .Category}}&category={{.Category}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .DueFilter}}&due={{.DueFilter}}{{end}}{{if .WorkspaceID}}&workspace_id={{.WorkspaceID}}{{end}}"
             class="files-view-btn {{if ne .View "list"}}is-active{{end}}"
             title="Vista en cuadrícula"
             aria-label="Vista en cuadrícula">
@@ -105,7 +130,7 @@
             </svg>
           </a>
           <a
-            href="?view=list{{if .Query}}&q={{.Query}}{{end}}{{if .Category}}&category={{.Category}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .WorkspaceID}}&workspace_id={{.WorkspaceID}}{{end}}"
+            href="?view=list{{if .Query}}&q={{.Query}}{{end}}{{if .Category}}&category={{.Category}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .DueFilter}}&due={{.DueFilter}}{{end}}{{if .WorkspaceID}}&workspace_id={{.WorkspaceID}}{{end}}"
             class="files-view-btn {{if eq .View "list"}}is-active{{end}}"
             title="Vista en lista"
             aria-label="Vista en lista">

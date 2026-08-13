@@ -100,6 +100,19 @@ func (m *mockDocumentRepo) CountByCategory(ctx context.Context, workspaceID stri
 	return args.Get(0).(map[string]int), args.Error(1)
 }
 
+func (m *mockDocumentRepo) CountDueAlerts(ctx context.Context, workspaceID, status string) (int, int, error) {
+	args := m.Called(ctx, workspaceID, status)
+	return args.Int(0), args.Int(1), args.Error(2)
+}
+
+func (m *mockDocumentRepo) CountDueAlertsByCategory(ctx context.Context, workspaceID, status string) (map[string]dtos.CategoryDueAlertCounts, error) {
+	args := m.Called(ctx, workspaceID, status)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string]dtos.CategoryDueAlertCounts), args.Error(1)
+}
+
 func stubEnsurePersonal(wsRepo *mockWorkspaceRepo) *EnsurePersonalWorkspaceUseCase {
 	stubs := archivetest.NewArchiveStubs()
 	ws := stubs.PersonalWorkspace()
@@ -193,11 +206,16 @@ func TestListCategoryFoldersUseCase_ListsWithCounts(t *testing.T) {
 	docRepo.On("CountByCategory", mock.Anything, "ws-1", "active").Return(map[string]int{
 		"utilities": 3,
 	}, nil)
+	docRepo.On("CountDueAlertsByCategory", mock.Anything, "ws-1", "active").Return(map[string]dtos.CategoryDueAlertCounts{
+		"utilities": {Upcoming: 1, Expired: 1},
+	}, nil)
 
 	folders, err := uc.Execute(context.Background(), "user-1", "", "active")
 	require.NoError(t, err)
 	require.Len(t, folders, 2)
 	assert.Equal(t, 3, folders[0].Count)
+	assert.Equal(t, 2, folders[0].AlertCount)
+	assert.Equal(t, 1, folders[0].DueExpired)
 	assert.Equal(t, 0, folders[1].Count)
 	assert.Equal(t, "Servicios públicos", folders[0].LabelES)
 }

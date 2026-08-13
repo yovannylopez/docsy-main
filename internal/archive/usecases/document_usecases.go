@@ -88,6 +88,7 @@ func toDocumentResponse(doc *entities.Document, label string) *dtos.DocumentResp
 		Notes:           doc.Notes,
 		ExtraFields:     extraFieldsToDTO(doc.ExtraFields),
 		Status:          doc.Status,
+		DueStatus:       entities.ClassifyDueDate(doc.DueDate, time.Now()),
 		CreatedAt:       doc.CreatedAt,
 		UpdatedAt:       doc.UpdatedAt,
 	}
@@ -279,6 +280,7 @@ func (uc *ListDocumentsUseCase) Execute(ctx context.Context, userID string, filt
 	if err != nil {
 		return nil, 0, err
 	}
+	filter.DueAlert = normalizeDueAlert(filter.DueAlert)
 	docs, total, err := uc.access.docRepo.List(ctx, ws.ID, filter)
 	if err != nil {
 		return nil, 0, err
@@ -310,6 +312,27 @@ func (uc *ListDocumentsUseCase) Execute(ctx context.Context, userID string, filt
 		out = append(out, resp)
 	}
 	return out, total, nil
+}
+
+// CountDueAlerts returns upcoming/expired counts for the caller's workspace.
+func (uc *ListDocumentsUseCase) CountDueAlerts(ctx context.Context, userID, workspaceID, status string) (upcoming, expired int, err error) {
+	ws, err := uc.access.workspaceForUser(ctx, userID, workspaceID, false)
+	if err != nil {
+		return 0, 0, err
+	}
+	if status == "" {
+		status = entities.DocumentStatusActive
+	}
+	return uc.access.docRepo.CountDueAlerts(ctx, ws.ID, status)
+}
+
+func normalizeDueAlert(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case entities.DueAlertUpcoming, entities.DueAlertExpired:
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return ""
+	}
 }
 
 // GetDocumentUseCase retrieves one document.
@@ -564,14 +587,22 @@ func (uc *ListCategoryFoldersUseCase) Execute(
 	if err != nil {
 		return nil, fmt.Errorf("count by category: %w", err)
 	}
+	dueByCat, err := uc.access.docRepo.CountDueAlertsByCategory(ctx, ws.ID, status)
+	if err != nil {
+		return nil, fmt.Errorf("count due alerts by category: %w", err)
+	}
 	out := make([]dtos.CategoryFolderResponse, 0, len(cats))
 	for _, c := range cats {
+		due := dueByCat[c.Code]
 		out = append(out, dtos.CategoryFolderResponse{
-			Code:      c.Code,
-			LabelES:   c.LabelES,
-			SortOrder: c.SortOrder,
-			Count:     counts[c.Code],
-			IsSystem:  c.IsSystem,
+			Code:        c.Code,
+			LabelES:     c.LabelES,
+			SortOrder:   c.SortOrder,
+			Count:       counts[c.Code],
+			IsSystem:    c.IsSystem,
+			DueUpcoming: due.Upcoming,
+			DueExpired:  due.Expired,
+			AlertCount:  due.Upcoming + due.Expired,
 		})
 	}
 	return out, nil

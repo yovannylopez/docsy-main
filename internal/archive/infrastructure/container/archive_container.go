@@ -23,6 +23,7 @@ type ArchiveContainer struct {
 	DocumentStorage  ports.DocumentStorage
 	EnsurePersonalUC ports.EnsurePersonalWorkspaceService
 	StorageUsageUC   ports.GetStorageUsageService
+	ListDocumentsUC  ports.ListDocumentsService
 	Handler          *handlers.ArchiveHandler
 	PageHandler      *handlers.ArchivePageHandler
 }
@@ -87,6 +88,7 @@ func NewArchiveContainer(
 		DocumentStorage:  docStorage,
 		EnsurePersonalUC: ensureUC,
 		StorageUsageUC:   storageUsageUC,
+		ListDocumentsUC:  listDocsUC,
 		Handler: handlers.NewArchiveHandler(
 			ensureUC, listWorkspacesUC, createHouseholdUC, listMembersUC, inviteMemberUC,
 			updateMemberRoleUC, removeMemberUC,
@@ -116,4 +118,9 @@ func (c *ArchiveContainer) GetArchivePageHandler() *handlers.ArchivePageHandler 
 // GetStorageUsageUC returns the sidebar storage usage use case.
 func (c *ArchiveContainer) GetStorageUsageUC() ports.GetStorageUsageService {
 	return c.StorageUsageUC
+}
+
+// GetListDocumentsUC returns the list-documents use case (also used for due-alert badges).
+func (c *ArchiveContainer) GetListDocumentsUC() ports.ListDocumentsService {
+	return c.ListDocumentsUC
 }

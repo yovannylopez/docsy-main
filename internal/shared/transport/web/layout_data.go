@@ -14,6 +14,8 @@ type AppLayoutData struct {
 	Year            int
 	ThemeClass      string
 	Storage         SidebarStorageData
+	// AlertCount is the in-app notification badge (e.g. due documents).
+	AlertCount int
 }
 
 // NewAppLayoutData builds layout defaults for app pages.

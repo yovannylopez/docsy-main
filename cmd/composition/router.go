@@ -42,6 +42,7 @@ type Router struct {
 func NewRouter(e *echo.Echo, container *Container) *Router {
 	webAuthMW := authmiddleware.NewWebAuthMiddleware(container.AuthContainer.AuthUseCase)
 	sidebarStorageMW := archivemw.InjectSidebarStorage(container.ArchiveContainer.GetStorageUsageUC())
+	dueAlertsMW := archivemw.InjectDueAlerts(container.ArchiveContainer.GetListDocumentsUC())
 	return &Router{
 		echo:      e,
 		container: container,
@@ -54,21 +55,25 @@ func NewRouter(e *echo.Echo, container *Container) *Router {
 			webAuthMW,
 			container.AuthRateLimit,
 			sidebarStorageMW,
+			dueAlertsMW,
 		),
 		webUsersRoutes: usersRoutes.NewWebUsersRoutes(
 			container.UsersContainer.GetUsersPageHandler(),
 			webAuthMW,
 			sidebarStorageMW,
+			dueAlertsMW,
 		),
 		webAuditRoutes: authRoutes.NewWebAuditRoutes(
 			container.CreateAuditPageHandler(),
 			webAuthMW,
 			sidebarStorageMW,
+			dueAlertsMW,
 		),
 		webArchiveRoutes: archiveRoutes.NewWebArchiveRoutes(
 			container.ArchiveContainer.GetArchivePageHandler(),
 			webAuthMW,
 			sidebarStorageMW,
+			dueAlertsMW,
 		),
 		auditRoutes:  authRoutes.NewAuditRoutes(container.AuthContainer.GetAuditHandler()),
 		healthRoutes: sharedRoutes.NewHealthRoutes(container.CreateHealthHandler()),

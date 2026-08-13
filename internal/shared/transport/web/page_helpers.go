@@ -60,6 +60,9 @@ func AppLayoutFromEcho(c echo.Context, title, subtitle, activeRoute string) AppL
 	if v, ok := c.Get(ContextKeySidebarStorage).(SidebarStorageData); ok {
 		data.Storage = v
 	}
+	if n, ok := c.Get(ContextKeyAlertCount).(int); ok && n > 0 {
+		data.AlertCount = n
+	}
 	return data
 }
 

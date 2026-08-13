@@ -342,7 +342,7 @@ func (uc *DeactivateCategoryUseCase) Execute(ctx context.Context, userID, worksp
 	if cat.IsSystem {
 		return domainerrors.ErrCannotModifySystemCategory
 	}
-	counts, err := uc.access.docRepo.CountByCategory(ctx, ws.ID, "all")
+	counts, err := uc.access.docRepo.CountByCategory(ctx, ws.ID, entities.DocumentStatusAll)
 	if err != nil {
 		return fmt.Errorf("count by category: %w", err)
 	}

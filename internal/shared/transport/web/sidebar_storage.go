@@ -10,6 +10,9 @@ import (
 // ContextKeySidebarStorage is the echo.Context key for sidebar storage usage.
 const ContextKeySidebarStorage = "sidebar_storage"
 
+// ContextKeyAlertCount is the echo.Context key for the profile notification badge count.
+const ContextKeyAlertCount = "alert_count"
+
 const storagePercentMax = 100
 
 // SidebarStorageData drives the sidebar storage indicator.

@@ -114,33 +114,44 @@ type InviteMemberForm struct {
 // DocumentsListPageData holds the documents list view.
 type DocumentsListPageData struct {
 	weblayout.AppLayoutData
-	WorkspaceID   string
-	Workspaces    []dtos.WorkspaceResponse
-	Documents     []DocumentListItem
-	Folders       []CategoryFolderItem
-	Total         int
-	Query         string
-	Category      string
-	CategoryLabel string
-	Status        string
-	View          string // grid | list
-	Mode          string // folders | documents
-	BrowseURL     string // folders root (no category/query)
-	CreateURL     string // new document (optionally preselects category)
-	Categories    []dtos.DocumentCategoryResponse
-	Error         string
-	Success       string
-	Pagination    weblayout.PaginationData
+	WorkspaceID    string
+	Workspaces     []dtos.WorkspaceResponse
+	Documents      []DocumentListItem
+	Folders        []CategoryFolderItem
+	Total          int
+	Query          string
+	Category       string
+	CategoryLabel  string
+	Status         string
+	View           string // grid | list
+	Mode           string // folders | documents
+	BrowseURL      string // folders root (no category/query)
+	CreateURL      string // new document (optionally preselects category)
+	Categories     []dtos.DocumentCategoryResponse
+	DueFilter      string // upcoming | expired | ""
+	DueFilterLabel string
+	DueUpcoming    int
+	DueExpired     int
+	DueUpcomingURL string
+	DueExpiredURL  string
+	Error          string
+	Success        string
+	Pagination     weblayout.PaginationData
 }
 
 // CategoryFolderItem is a virtual folder card for the documents browser.
 type CategoryFolderItem struct {
-	Code     string
-	Label    string
-	Count    int
-	OpenURL  string
-	IconTone string
-	MetaLine string
+	Code        string
+	Label       string
+	Count       int
+	OpenURL     string
+	IconTone    string
+	MetaLine    string
+	AlertCount  int
+	DueExpired  int
+	DueUpcoming int
+	AlertTone   string // due-badge-expired | due-badge-upcoming
+	AlertLabel  string
 }
 
 // DocumentListItem is a card/row for the documents browser.
@@ -153,6 +164,8 @@ type DocumentListItem struct {
 	ReferenceNumber string
 	DocumentDate    string
 	DueDate         string
+	DueStatus       string // upcoming | expired | ""
+	DueBadgeLabel   string
 	AmountDisplay   string
 	Status          string
 	EditURL         string
@@ -498,6 +511,7 @@ func (h *ArchivePageHandler) ListDocuments(c echo.Context) error {
 	query := strings.TrimSpace(c.QueryParam("q"))
 	category := strings.TrimSpace(c.QueryParam("category"))
 	status := strings.TrimSpace(c.QueryParam("status"))
+	dueFilter := normalizeDueFilterParam(c.QueryParam("due"))
 	view := strings.TrimSpace(strings.ToLower(c.QueryParam("view")))
 	if view != "list" {
 		view = "grid"
@@ -512,22 +526,31 @@ func (h *ArchivePageHandler) ListDocuments(c echo.Context) error {
 	categoryLabel := categoryLabelFromList(cats, category)
 
 	base := DocumentsListPageData{
-		AppLayoutData: weblayout.AppLayoutFromEcho(c, archiveDocsTitle, archiveDocsSubtitle, "/archivo/documentos"),
-		WorkspaceID:   workspaceID,
-		Workspaces:    workspaces,
-		Query:         query,
-		Category:      category,
-		CategoryLabel: categoryLabel,
-		Status:        status,
-		View:          view,
-		BrowseURL:     documentsBrowseURL(workspaceID, status),
-		CreateURL:     documentsCreateURL(workspaceID, category),
-		Categories:    cats,
-		Success:       archiveFlash(c),
+		AppLayoutData:  weblayout.AppLayoutFromEcho(c, archiveDocsTitle, archiveDocsSubtitle, "/archivo/documentos"),
+		WorkspaceID:    workspaceID,
+		Workspaces:     workspaces,
+		Query:          query,
+		Category:       category,
+		CategoryLabel:  categoryLabel,
+		Status:         status,
+		View:           view,
+		DueFilter:      dueFilter,
+		DueFilterLabel: dueFilterLabel(dueFilter),
+		BrowseURL:      documentsBrowseURL(workspaceID, status),
+		CreateURL:      documentsCreateURL(workspaceID, category),
+		Categories:     cats,
+		Success:        archiveFlash(c),
+	}
+	base.DueUpcomingURL = documentsDueURL(workspaceID, status, view, category, query, entities.DueAlertUpcoming)
+	base.DueExpiredURL = documentsDueURL(workspaceID, status, view, category, query, entities.DueAlertExpired)
+
+	if upcoming, expired, dueErr := h.listDocsUC.CountDueAlerts(c.Request().Context(), userID, workspaceID, status); dueErr == nil {
+		base.DueUpcoming = upcoming
+		base.DueExpired = expired
 	}
 
-	// Virtual folders home: no category selected and no search query.
-	if category == "" && query == "" {
+	// Virtual folders home: no category, search, or due filter.
+	if category == "" && query == "" && dueFilter == "" {
 		folders, folderErr := h.listFoldersUC.Execute(c.Request().Context(), userID, workspaceID, status)
 		if folderErr != nil {
 			base.Mode = docsModeFolders
@@ -551,6 +574,7 @@ func (h *ArchivePageHandler) ListDocuments(c echo.Context) error {
 		Category:    category,
 		Query:       query,
 		Status:      status,
+		DueAlert:    dueFilter,
 		Limit:       params.Limit,
 		Offset:      params.Offset,
 	})
@@ -940,6 +964,13 @@ func toListItem(doc *dtos.DocumentResponse, workspaceID string) DocumentListItem
 	if doc.DueDate != nil {
 		item.DueDate = doc.DueDate.Format("02/01/2006")
 	}
+	item.DueStatus = doc.DueStatus
+	switch doc.DueStatus {
+	case entities.DueAlertExpired:
+		item.DueBadgeLabel = "Vencido"
+	case entities.DueAlertUpcoming:
+		item.DueBadgeLabel = "Vence pronto"
+	}
 	if doc.AmountCents != nil {
 		item.AmountDisplay = formatAmountPesos(*doc.AmountCents) + " " + doc.Currency
 	}
@@ -1059,6 +1090,52 @@ func documentsBrowseURL(workspaceID, status string) string {
 	return "/archivo/documentos?" + q.Encode()
 }
 
+func documentsDueURL(workspaceID, status, view, category, query, due string) string {
+	q := url.Values{}
+	if due != "" {
+		q.Set("due", due)
+	}
+	if status != "" && status != entities.DocumentStatusActive {
+		q.Set("status", status)
+	}
+	if workspaceID != "" {
+		q.Set("workspace_id", workspaceID)
+	}
+	if view == "list" {
+		q.Set("view", "list")
+	}
+	if category != "" {
+		q.Set("category", category)
+	}
+	if query != "" {
+		q.Set("q", query)
+	}
+	if len(q) == 0 {
+		return "/archivo/documentos"
+	}
+	return "/archivo/documentos?" + q.Encode()
+}
+
+func normalizeDueFilterParam(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case entities.DueAlertUpcoming, entities.DueAlertExpired:
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return ""
+	}
+}
+
+func dueFilterLabel(due string) string {
+	switch due {
+	case entities.DueAlertUpcoming:
+		return "Por vencer"
+	case entities.DueAlertExpired:
+		return "Vencidos"
+	default:
+		return ""
+	}
+}
+
 func documentsCreateURL(workspaceID, category string) string {
 	q := url.Values{}
 	if workspaceID != "" {
@@ -1091,14 +1168,35 @@ func toFolderItem(f dtos.CategoryFolderResponse, workspaceID, status, view strin
 	} else if f.Count > 1 {
 		meta = fmt.Sprintf("%d documentos", f.Count)
 	}
-	return CategoryFolderItem{
-		Code:     f.Code,
-		Label:    f.LabelES,
-		Count:    f.Count,
-		OpenURL:  "/archivo/documentos?" + q.Encode(),
-		IconTone: categoryIconTone(f.Code),
-		MetaLine: meta,
+	item := CategoryFolderItem{
+		Code:        f.Code,
+		Label:       f.LabelES,
+		Count:       f.Count,
+		OpenURL:     "/archivo/documentos?" + q.Encode(),
+		IconTone:    categoryIconTone(f.Code),
+		MetaLine:    meta,
+		AlertCount:  f.AlertCount,
+		DueExpired:  f.DueExpired,
+		DueUpcoming: f.DueUpcoming,
 	}
+	if f.DueExpired > 0 {
+		item.AlertTone = "due-badge-expired"
+		switch {
+		case f.DueUpcoming > 0:
+			item.AlertLabel = fmt.Sprintf("%d vencidos · %d por vencer", f.DueExpired, f.DueUpcoming)
+			if f.DueExpired == 1 {
+				item.AlertLabel = fmt.Sprintf("1 vencido · %d por vencer", f.DueUpcoming)
+			}
+		case f.DueExpired == 1:
+			item.AlertLabel = "1 vencido"
+		default:
+			item.AlertLabel = fmt.Sprintf("%d vencidos", f.DueExpired)
+		}
+	} else if f.DueUpcoming > 0 {
+		item.AlertTone = "due-badge-upcoming"
+		item.AlertLabel = fmt.Sprintf("%d por vencer", f.DueUpcoming)
+	}
+	return item
 }
 
 func documentMetaLine(item DocumentListItem) string {
@@ -1108,6 +1206,9 @@ func documentMetaLine(item DocumentListItem) string {
 	}
 	if item.DocumentDate != "" {
 		parts = append(parts, item.DocumentDate)
+	}
+	if item.DueDate != "" {
+		parts = append(parts, "vence "+item.DueDate)
 	}
 	if item.AmountDisplay != "" {
 		parts = append(parts, item.AmountDisplay)

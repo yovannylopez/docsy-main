@@ -6,6 +6,7 @@ import "time"
 const (
 	DocumentStatusActive   = "active"
 	DocumentStatusArchived = "archived"
+	DocumentStatusAll      = "all" // list filter: include active and archived
 )
 
 // DefaultDocumentCurrency is the default ISO currency code for amounts.

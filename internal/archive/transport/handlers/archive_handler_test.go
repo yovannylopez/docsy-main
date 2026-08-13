@@ -33,6 +33,10 @@ func (s stubListDocsUC) Execute(_ context.Context, _ string, _ dtos.ListDocument
 	return s.docs, s.total, nil
 }
 
+func (s stubListDocsUC) CountDueAlerts(_ context.Context, _, _, _ string) (int, int, error) {
+	return 0, 0, nil
+}
+
 type stubGetDocUC struct {
 	doc *dtos.DocumentResponse
 	err error

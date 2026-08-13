@@ -43,6 +43,9 @@
             aria-expanded="false">
             <span class="sr-only">Abrir menú de usuario</span>
             <img class="size-9 shrink-0 rounded-md" src="{{if .AvatarURL}}{{.AvatarURL}}{{else}}{{assetURL "/assets/avatars/avatar-01.png"}}{{end}}" alt="" />
+            {{if gt .AlertCount 0}}
+            <span class="profile-alert-dot" aria-hidden="true"></span>
+            {{end}}
           </button>
           {{template "partials/profile-menu" .}}
         </div>

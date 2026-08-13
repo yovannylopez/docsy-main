@@ -229,6 +229,10 @@ func (h *ArchiveHandler) ListDocuments(c echo.Context) error {
 		filter.DueBefore = due
 	}
 
+	if due := normalizeDueFilterParam(c.QueryParam("due")); due != "" {
+		filter.DueAlert = due
+	}
+
 	docs, total, err := h.listDocsUC.Execute(c.Request().Context(), userID, filter)
 	if err != nil {
 		return mapArchiveAPIError(c, err)

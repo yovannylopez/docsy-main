@@ -28,11 +28,17 @@ type DocumentRepository interface {
 	CountCustomCategories(ctx context.Context, workspaceID string) (int, error)
 	// CountByCategory returns document counts keyed by category_code for a workspace.
 	CountByCategory(ctx context.Context, workspaceID string, status string) (map[string]int, error)
+	// CountDueAlerts returns upcoming (today..+7d) and expired (before today) counts for documents with due_date.
+	CountDueAlerts(ctx context.Context, workspaceID, status string) (upcoming, expired int, err error)
+	// CountDueAlertsByCategory returns upcoming/expired due counts keyed by category_code.
+	CountDueAlertsByCategory(ctx context.Context, workspaceID, status string) (map[string]dtos.CategoryDueAlertCounts, error)
 }
 
 // ListDocumentsService lists documents for the caller's personal workspace.
 type ListDocumentsService interface {
 	Execute(ctx context.Context, userID string, filter dtos.ListDocumentsFilter) ([]dtos.DocumentResponse, int, error)
+	// CountDueAlerts returns in-app due summary counts for the caller's workspace.
+	CountDueAlerts(ctx context.Context, userID, workspaceID, status string) (upcoming, expired int, err error)
 }
 
 // GetDocumentService retrieves one document by id in the caller's workspace.

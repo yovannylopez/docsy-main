@@ -82,7 +82,7 @@ Contiene:
 ### Excluye
 
 - OCR / DIAN / CUFE automático.
-- Recordatorios de vencimiento (futuro; el campo `due_date` sí se guarda).
+- Recordatorios de vencimiento por email/push (futuro). MVP in-app: badges «Vence pronto» / «Vencido», franja resumen y filtro `?due=upcoming|expired` (ventana 7 días).
 - Hogar e invitaciones (Iteración D — **hecho**).
 - Panel super admin / catálogo de módulos (SDD `platform`).
 - TRD/AGN, planes SaaS, cuotas de almacenamiento en nube (S3/minio = futuro).

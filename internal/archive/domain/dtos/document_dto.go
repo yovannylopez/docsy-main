@@ -25,6 +25,7 @@ type DocumentResponse struct {
 	Notes               *string         `json:"notes,omitempty"`
 	ExtraFields         []ExtraFieldDTO `json:"extra_fields,omitempty"`
 	Status              string          `json:"status"`
+	DueStatus           string          `json:"due_status,omitempty"` // upcoming | expired
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
 	PrimaryOriginalName string          `json:"primary_original_name,omitempty"`
@@ -72,9 +73,11 @@ type ListDocumentsFilter struct {
 	From        *time.Time
 	To          *time.Time
 	DueBefore   *time.Time
-	Status      string
-	Limit       int
-	Offset      int
+	// DueAlert filters by due window: "upcoming" (today..+7d) or "expired" (before today).
+	DueAlert string
+	Status   string
+	Limit    int
+	Offset   int
 }
 
 // DocumentCategoryResponse is a category option for forms/API.
@@ -99,9 +102,18 @@ type UpdateCategoryRequest struct {
 
 // CategoryFolderResponse is a virtual folder (category) for the documents browser.
 type CategoryFolderResponse struct {
-	Code      string `json:"code"`
-	LabelES   string `json:"label_es"`
-	SortOrder int    `json:"sort_order"`
-	Count     int    `json:"count"`
-	IsSystem  bool   `json:"is_system"`
+	Code        string `json:"code"`
+	LabelES     string `json:"label_es"`
+	SortOrder   int    `json:"sort_order"`
+	Count       int    `json:"count"`
+	IsSystem    bool   `json:"is_system"`
+	DueUpcoming int    `json:"due_upcoming,omitempty"`
+	DueExpired  int    `json:"due_expired,omitempty"`
+	AlertCount  int    `json:"alert_count,omitempty"` // upcoming + expired
+}
+
+// CategoryDueAlertCounts holds due-alert totals for one category folder.
+type CategoryDueAlertCounts struct {
+	Upcoming int
+	Expired  int
 }

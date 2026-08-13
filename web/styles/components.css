@@ -436,6 +436,155 @@ select {
   color: var(--muted-foreground);
 }
 
+.file-card-badge.due-badge-upcoming,
+.due-badge.due-badge-upcoming {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.file-card-badge.due-badge-expired,
+.due-badge.due-badge-expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.dark .file-card-badge.due-badge-upcoming,
+.dark .due-badge.due-badge-upcoming {
+  background: rgba(120, 53, 15, 0.35);
+  color: #fcd34d;
+}
+
+.dark .file-card-badge.due-badge-expired,
+.dark .due-badge.due-badge-expired {
+  background: rgba(127, 29, 29, 0.4);
+  color: #fca5a5;
+}
+
+.due-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.due-alerts-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 0.875rem;
+}
+
+.due-alert-chip {
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  padding: 0.15rem 0.45rem;
+  transition: background-color 0.15s ease;
+}
+
+.due-alert-chip.due-alert-upcoming {
+  color: #92400e;
+}
+
+.due-alert-chip.due-alert-expired {
+  color: #991b1b;
+}
+
+.dark .due-alert-chip.due-alert-upcoming {
+  color: #fcd34d;
+}
+
+.dark .due-alert-chip.due-alert-expired {
+  color: #fca5a5;
+}
+
+.due-alert-chip:hover,
+.due-alert-chip.is-active {
+  background: var(--muted);
+}
+
+.due-alert-sep {
+  color: var(--muted-foreground);
+}
+
+.due-alert-clear {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.due-alert-clear:hover {
+  color: var(--foreground);
+}
+
+.profile-alert-dot {
+  position: absolute;
+  top: -0.1rem;
+  right: -0.1rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #ef4444;
+  border: 2px solid var(--background);
+  pointer-events: none;
+}
+
+.profile-menu-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.folder-alert-badge {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.folder-alert-badge.due-badge-upcoming {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.folder-alert-badge.due-badge-expired {
+  background: #ef4444;
+  color: #fff;
+}
+
 .file-ext-badge {
   position: absolute;
   top: 0.65rem;
